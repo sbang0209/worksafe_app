@@ -14,7 +14,21 @@ class MainTabScreen extends StatefulWidget {
 class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
 
-  static const _screens = [HomeScreen(), HistoryScreen(), MenuScreen()];
+  final _historyKey = GlobalKey<HistoryScreenState>();
+
+  late final _screens = [
+    const HomeScreen(),
+    HistoryScreen(key: _historyKey),
+    const MenuScreen(),
+  ];
+
+  void _onTap(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 1) {
+      // 최근 기록 탭으로 돌아올 때마다 최신 목록을 다시 불러온다.
+      _historyKey.currentState?.reload();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +36,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: _onTap,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: '최근 기록'),

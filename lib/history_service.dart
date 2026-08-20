@@ -34,6 +34,13 @@ class HistoryEntry {
     imagePath: json['imagePath'] as String,
     timestamp: DateTime.parse(json['timestamp'] as String),
   );
+
+  /// "2026-08-20 14:05" 형태로 사람이 읽기 좋게 표시한다.
+  String get formattedTimestamp {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${timestamp.year}-${two(timestamp.month)}-${two(timestamp.day)} '
+        '${two(timestamp.hour)}:${two(timestamp.minute)}';
+  }
 }
 
 /// 분석 기록을 폰에 저장/조회/삭제하는 서비스.
@@ -96,6 +103,22 @@ class HistoryService {
       debugPrint('HistoryService: 기록을 불러오지 못했습니다: $e');
       return [];
     }
+  }
+
+  /// 오늘(연-월-일 기준) 같은 [name] 으로 저장된 기록이 있으면 그 기록을 돌려준다.
+  /// 없으면 null.
+  Future<HistoryEntry?> findDuplicateToday(String name) async {
+    final entries = await getAll();
+    final today = DateTime.now();
+    for (final entry in entries) {
+      final t = entry.timestamp;
+      final sameDay =
+          t.year == today.year && t.month == today.month && t.day == today.day;
+      if (sameDay && entry.result['name'] == name) {
+        return entry;
+      }
+    }
+    return null;
   }
 
   /// id 로 기록 하나를 지운다. 사진 파일도 함께 지운다.

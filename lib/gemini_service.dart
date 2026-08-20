@@ -5,13 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+import 'language_service.dart';
+
 /// 사용할 Gemini 모델명. 404(모델 없음) 오류가 나면 여기만 바꾸면 됩니다.
 /// 'gemini-2.5-flash-lite' 는 무료 등급에서 쓸 수 있는 경량 모델로,
 /// 503 혼잡 상황에서 회복이 빠릅니다.
 const String kGeminiModel = 'gemini-2.5-flash-lite';
-
-/// 관리자 확인 안내. AI 응답이 아니라 코드에서 항상 고정으로 붙인다.
-const String kManagerNotice = '정확한 작동 방법은 반드시 현장 관리자에게 확인하세요';
 
 /// 서버 과부하(503) 등 일시적 오류 재시도 설정.
 /// 최대 4회 재시도하며 대기 시간은 2 → 4 → 8 → 16초로 늘어납니다.
@@ -21,13 +20,18 @@ const int _firstRetryDelaySeconds = 2;
 /// 재시도를 모두 소진했을 때 사용자에게 보여줄 문구
 const String _busyMessage = '서버가 혼잡합니다. 잠시 후 다시 시도하세요';
 
-const String _analyzePrompt = '''
+/// [language] 로 값을 채우도록 지시하는 분석 프롬프트를 만든다.
+/// 지시문 자체는 한국어로 두고, "값은 이 언어로 써라" 만 지정한다.
+/// JSON 의 키 이름(name, category 등)은 항상 영어 그대로 유지한다.
+String _analyzePrompt(AppLanguage language) =>
+    '''
 너는 한국 산업 현장의 안전 도우미다. 사진 속 물건을 보고 아래 JSON 형식으로만 답해라.
-설명 문장이나 마크다운 없이 순수 JSON 만 출력해라. 모르면 값을 '알 수 없음'으로 채워라.
+설명 문장이나 마크다운 없이 순수 JSON 만 출력해라. 모르면 값을 '${language.unknownLabel}' 으로 채워라.
 기계 조작법이나 작동 순서는 절대 생성하지 마라. 위험요소와 금지행동 위주로만 답해라.
+JSON 의 키 이름은 그대로 영어로 두고, 문자열/리스트 값은 모두 ${language.promptName} 로 작성해라.
 
 {
-  "name": "물건 이름 (한국어, 한 줄)",
+  "name": "물건 이름 (한 줄)",
   "category": "분류 (예: 목공 절단 기계, 사무기기 등)",
   "usage": "이 물건을 현장에서 어떤 작업에 쓰는지 한 문장",
   "hazards": ["위험요소1", "위험요소2"],
@@ -52,10 +56,12 @@ class GeminiService {
   /// 반환 키: name, category, usage, hazards, required_ppe, prohibited,
   ///          manager_notice (항상 코드에서 추가)
   Future<Map<String, dynamic>> analyzeObject(File image) async {
+    final language = await LanguageService.instance.getLanguage();
+
     final apiKey = dotenv.env['GEMINI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       debugPrint('GeminiService: .env 에 GEMINI_API_KEY 가 없습니다');
-      return _fallback('인식 실패 (API 키 없음)');
+      return _fallback('인식 실패 (API 키 없음)', language);
     }
 
     try {
@@ -66,7 +72,7 @@ class GeminiService {
         'contents': [
           {
             'parts': [
-              {'text': _analyzePrompt},
+              {'text': _analyzePrompt(language)},
               {
                 'inline_data': {
                   'mime_type': _mimeTypeOf(image.path),
@@ -94,6 +100,7 @@ class GeminiService {
             response.statusCode == 500;
         return _fallback(
           busy ? _busyMessage : '인식 실패 (상태코드: ${response.statusCode})',
+          language,
         );
       }
 
@@ -103,14 +110,14 @@ class GeminiService {
 
       if (text == null || text.trim().isEmpty) {
         debugPrint('GeminiService: 텍스트를 찾지 못했습니다. body=${response.body}');
-        return _fallback('인식 실패');
+        return _fallback('인식 실패', language);
       }
 
-      return _parseResult(text);
+      return _parseResult(text, language);
     } catch (e, stack) {
       debugPrint('GeminiService.analyzeObject 실패: $e');
       debugPrint('$stack');
-      return _fallback('인식 실패 (네트워크 또는 API 오류)');
+      return _fallback('인식 실패 (네트워크 또는 API 오류)', language);
     }
   }
 
@@ -149,21 +156,21 @@ class GeminiService {
   }
 
   /// 응답 텍스트에서 JSON 을 뽑아 Map 으로 만든다.
-  Map<String, dynamic> _parseResult(String text) {
+  Map<String, dynamic> _parseResult(String text, AppLanguage language) {
     final cleaned = _stripCodeFence(text);
     try {
       final decoded = jsonDecode(cleaned);
       if (decoded is! Map) {
         debugPrint('GeminiService: JSON 이 객체가 아닙니다. 원본 텍스트:\n$text');
-        return _fallback('인식 실패');
+        return _fallback('인식 실패', language);
       }
-      final result = _normalize(Map<String, dynamic>.from(decoded));
-      result['manager_notice'] = kManagerNotice;
+      final result = _normalize(Map<String, dynamic>.from(decoded), language);
+      result['manager_notice'] = language.managerNotice;
       return result;
     } catch (e) {
       debugPrint('GeminiService: JSON 파싱 실패: $e');
       debugPrint('GeminiService: 원본 텍스트:\n$text');
-      return _fallback('인식 실패');
+      return _fallback('인식 실패', language);
     }
   }
 
@@ -190,20 +197,23 @@ class GeminiService {
   }
 
   /// 키 누락이나 타입 불일치(문자열 하나만 온 경우 등)를 화면에서 쓰기 좋게 정리한다.
-  Map<String, dynamic> _normalize(Map<String, dynamic> raw) {
+  Map<String, dynamic> _normalize(
+    Map<String, dynamic> raw,
+    AppLanguage language,
+  ) {
     return {
-      'name': _asText(raw['name']),
-      'category': _asText(raw['category']),
-      'usage': _asText(raw['usage']),
+      'name': _asText(raw['name'], language),
+      'category': _asText(raw['category'], language),
+      'usage': _asText(raw['usage'], language),
       'hazards': _asList(raw['hazards']),
       'required_ppe': _asList(raw['required_ppe']),
       'prohibited': _asList(raw['prohibited']),
     };
   }
 
-  String _asText(dynamic value) {
+  String _asText(dynamic value, AppLanguage language) {
     if (value is String && value.trim().isNotEmpty) return value.trim();
-    return '알 수 없음';
+    return language.unknownLabel;
   }
 
   List<String> _asList(dynamic value) {
@@ -218,15 +228,15 @@ class GeminiService {
   }
 
   /// 실패했을 때도 화면이 깨지지 않도록 같은 형태의 Map 을 돌려준다.
-  Map<String, dynamic> _fallback(String name) {
+  Map<String, dynamic> _fallback(String name, AppLanguage language) {
     return {
       'name': name,
-      'category': '알 수 없음',
-      'usage': '알 수 없음',
+      'category': language.unknownLabel,
+      'usage': language.unknownLabel,
       'hazards': <String>[],
       'required_ppe': <String>[],
       'prohibited': <String>[],
-      'manager_notice': kManagerNotice,
+      'manager_notice': language.managerNotice,
     };
   }
 

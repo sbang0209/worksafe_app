@@ -6,6 +6,7 @@ import '../gemini_service.dart';
 import '../history_service.dart';
 import '../main.dart' show cameras;
 import '../widgets/result_card_view.dart';
+import 'history_detail_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -72,13 +73,30 @@ class _CameraScreenState extends State<CameraScreen> {
         _isAnalyzing = false;
       });
 
-      // 기록 저장 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
+      // 기록 저장/중복 확인 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
       // 위 catch 의 "촬영 실패" 스낵바로 뭉뚱그려지지 않게 한다.
+      final name = (result['name'] as String?) ?? '알 수 없음';
+      HistoryEntry? duplicate;
       try {
-        await HistoryService.instance.add(result: result, imageFile: imageFile);
+        duplicate = await HistoryService.instance.findDuplicateToday(name);
       } catch (e, stack) {
-        debugPrint('HistoryService 저장 실패: $e');
+        debugPrint('HistoryService 중복 확인 실패: $e');
         debugPrint('$stack');
+      }
+      if (!mounted) return;
+
+      if (duplicate != null) {
+        await _showDuplicateDialog(existing: duplicate, name: name);
+      } else {
+        try {
+          await HistoryService.instance.add(
+            result: result,
+            imageFile: imageFile,
+          );
+        } catch (e, stack) {
+          debugPrint('HistoryService 저장 실패: $e');
+          debugPrint('$stack');
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -87,6 +105,47 @@ class _CameraScreenState extends State<CameraScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('촬영 실패: $e')));
     }
+  }
+
+  /// 오늘 같은 물건을 이미 찍은 기록이 있을 때 보여주는 안내 다이얼로그.
+  Future<void> _showDuplicateDialog({
+    required HistoryEntry existing,
+    required String name,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: kResultBackground,
+        title: const Text('중복 촬영'),
+        content: Text('오늘 이미 이 물건을 찍은 기록이 있어요.\n\n장비 품명 = $name'),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => HistoryDetailScreen(entry: existing),
+                      ),
+                    );
+                  },
+                  child: const Text('기록 보기'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('확인'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _retake() => setState(() {
@@ -200,7 +259,7 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Widget _buildResultView(String path) {
     return Container(
-      color: Colors.white,
+      color: kResultBackground,
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(

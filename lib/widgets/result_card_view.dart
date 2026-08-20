@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../language_service.dart';
+
 const String _unknown = '알 수 없음';
+
+/// 언어에 상관없이 "모름" 값을 판별하기 위한 전체 언어의 '모름' 문구 집합.
+final Set<String> _unknownLabels = {
+  for (final language in AppLanguage.all) language.unknownLabel,
+};
+
+bool _isUnknown(String value) => _unknownLabels.contains(value);
+
+/// 결과 카드 화면(촬영 직후 결과, 기록 상세)의 배경색.
+/// 순백 대신 살짝 톤 다운된 오프화이트로, 옅은 회색 카드와는 구분되게 한다.
+const Color kResultBackground = Color(0xFFFBF8F2);
 
 /// [GeminiService.analyzeObject] 가 돌려주는 분석 결과 Map 을
 /// 카드 UI 로 그려주는 위젯.
@@ -107,7 +120,7 @@ class _InfoCard extends StatelessWidget {
             name,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          if (category != _unknown) ...[
+          if (!_isUnknown(category)) ...[
             const SizedBox(height: 6),
             Text(
               category,
@@ -118,7 +131,7 @@ class _InfoCard extends StatelessWidget {
               ),
             ),
           ],
-          if (usage != _unknown) ...[
+          if (!_isUnknown(usage)) ...[
             const SizedBox(height: 12),
             Text(usage, style: const TextStyle(fontSize: 16, height: 1.4)),
           ],
