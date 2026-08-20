@@ -11,14 +11,18 @@ class ResultCardView extends StatelessWidget {
 
   final Map<String, dynamic> result;
 
-  String _text(String key) => (result[key] as String?)?.trim().isNotEmpty == true
+  String _text(String key) =>
+      (result[key] as String?)?.trim().isNotEmpty == true
       ? (result[key] as String).trim()
       : _unknown;
 
   List<String> _list(String key) {
     final value = result[key];
     if (value is List) {
-      return value.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList();
+      return value
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
     }
     return const [];
   }
@@ -77,7 +81,11 @@ class ResultCardView extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.name, required this.category, required this.usage});
+  const _InfoCard({
+    required this.name,
+    required this.category,
+    required this.usage,
+  });
 
   final String name;
   final String category;
@@ -112,10 +120,7 @@ class _InfoCard extends StatelessWidget {
           ],
           if (usage != _unknown) ...[
             const SizedBox(height: 12),
-            Text(
-              usage,
-              style: const TextStyle(fontSize: 16, height: 1.4),
-            ),
+            Text(usage, style: const TextStyle(fontSize: 16, height: 1.4)),
           ],
         ],
       ),
@@ -172,7 +177,14 @@ class _SafetySection extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('•  ', style: TextStyle(fontSize: 17, color: accent, fontWeight: FontWeight.bold)),
+                  Text(
+                    '•  ',
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: accent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       item,

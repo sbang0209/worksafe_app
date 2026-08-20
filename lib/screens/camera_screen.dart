@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
 import '../gemini_service.dart';
+import '../history_service.dart';
 import '../main.dart' show cameras;
 import '../widgets/result_card_view.dart';
 
@@ -63,14 +64,22 @@ class _CameraScreenState extends State<CameraScreen> {
         _isAnalyzing = true;
       });
 
-      final result = await GeminiService.instance.analyzeObject(
-        File(file.path),
-      );
+      final imageFile = File(file.path);
+      final result = await GeminiService.instance.analyzeObject(imageFile);
       if (!mounted) return;
       setState(() {
         _result = result;
         _isAnalyzing = false;
       });
+
+      // 기록 저장 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
+      // 위 catch 의 "촬영 실패" 스낵바로 뭉뚱그려지지 않게 한다.
+      try {
+        await HistoryService.instance.add(result: result, imageFile: imageFile);
+      } catch (e, stack) {
+        debugPrint('HistoryService 저장 실패: $e');
+        debugPrint('$stack');
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isAnalyzing = false);

@@ -14,11 +14,7 @@ class MainTabScreen extends StatefulWidget {
 class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
 
-  static const _screens = [
-    HomeScreen(),
-    HistoryScreen(),
-    MenuScreen(),
-  ];
+  static const _screens = [HomeScreen(), HistoryScreen(), MenuScreen()];
 
   @override
   Widget build(BuildContext context) {

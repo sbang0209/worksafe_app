@@ -43,8 +43,8 @@ class GeminiService {
   static final GeminiService instance = GeminiService._();
 
   Uri get _endpoint => Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/$kGeminiModel:generateContent',
-      );
+    'https://generativelanguage.googleapis.com/v1beta/models/$kGeminiModel:generateContent',
+  );
 
   /// 이미지 파일을 보내 구조화된 분석 결과를 돌려준다.
   /// 예외를 던지지 않고, 실패 시에도 항상 같은 형태의 Map 을 반환한다.
@@ -71,10 +71,10 @@ class GeminiService {
                 'inline_data': {
                   'mime_type': _mimeTypeOf(image.path),
                   'data': base64Image,
-                }
+                },
               },
-            ]
-          }
+            ],
+          },
         ],
         'generationConfig': {
           'temperature': 0.2,
@@ -88,7 +88,8 @@ class GeminiService {
         debugPrint('GeminiService 응답 오류 statusCode: ${response.statusCode}');
         debugPrint('GeminiService 응답 body: ${response.body}');
         // 재시도를 모두 소진하고도 혼잡 상태면 안내 문구를 그대로 보여준다
-        final busy = response.statusCode == 503 ||
+        final busy =
+            response.statusCode == 503 ||
             response.statusCode == 429 ||
             response.statusCode == 500;
         return _fallback(
@@ -126,14 +127,12 @@ class GeminiService {
     for (var attempt = 0; attempt <= _maxRetries; attempt++) {
       last = await http.post(
         _endpoint,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
+        headers: {'Content-Type': 'application/json', 'x-goog-api-key': apiKey},
         body: body,
       );
 
-      final retryable = last.statusCode == 503 ||
+      final retryable =
+          last.statusCode == 503 ||
           last.statusCode == 429 ||
           last.statusCode == 500;
       if (!retryable || attempt == _maxRetries) return last;
