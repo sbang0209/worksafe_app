@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../gemini_service.dart';
 import '../main.dart' show cameras;
+import '../widgets/result_card_view.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -62,7 +63,9 @@ class _CameraScreenState extends State<CameraScreen> {
         _isAnalyzing = true;
       });
 
-      final result = await GeminiService.instance.analyzeObject(File(file.path));
+      final result = await GeminiService.instance.analyzeObject(
+        File(file.path),
+      );
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -71,17 +74,17 @@ class _CameraScreenState extends State<CameraScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isAnalyzing = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('촬영 실패: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('촬영 실패: $e')));
     }
   }
 
   void _retake() => setState(() {
-        _capturedPath = null;
-        _result = null;
-        _isAnalyzing = false;
-      });
+    _capturedPath = null;
+    _result = null;
+    _isAnalyzing = false;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -157,19 +160,28 @@ class _CameraScreenState extends State<CameraScreen> {
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 40),
-          child: GestureDetector(
-            onTap: _takePicture,
-            child: Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                border: Border.all(color: Colors.white, width: 4),
+        SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 40),
+            child: GestureDetector(
+              onTap: _takePicture,
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  border: Border.all(color: Colors.white, width: 4),
+                ),
+                child: const Icon(
+                  Icons.camera_alt,
+                  size: 32,
+                  color: Colors.black,
+                ),
               ),
-              child: const Icon(Icons.camera_alt, size: 32, color: Colors.black),
             ),
           ),
         ),
@@ -178,76 +190,82 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Widget _buildResultView(String path) {
-    return Column(
-      children: [
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            color: Colors.black,
-            child: Image.file(File(path), fit: BoxFit.contain),
-          ),
-        ),
-        // TODO(4단계): 이 아래에 식별·용도·안전 정보 결과 카드가 들어감
-        Container(
-          width: double.infinity,
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.55,
-          ),
-          padding: const EdgeInsets.all(20),
-          color: Colors.white,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildAnalysisText(),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _isAnalyzing ? null : _retake,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('다시 찍기'),
+    return Container(
+      color: Colors.white,
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 260,
+                  child: Image.file(File(path), fit: BoxFit.cover),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              _buildAnalysisBody(),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _isAnalyzing ? null : _retake,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('다시 찍기'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: _isAnalyzing ? null : _goHome,
+                      icon: const Icon(Icons.home),
+                      label: const Text('홈'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  /// 로딩 중이면 "분석 중...", 결과가 오면 Gemini 한 줄 답변을 보여준다.
-  Widget _buildAnalysisText() {
+  void _goHome() {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  /// 분석 중이면 로딩 인디케이터를, 결과가 오면 카드 UI(ResultCardView)를 보여준다.
+  Widget _buildAnalysisBody() {
     if (_isAnalyzing) {
-      return const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          SizedBox(width: 12),
-          Text('분석 중...'),
-        ],
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12),
+            Text('분석 중...', style: TextStyle(fontSize: 16)),
+          ],
+        ),
       );
     }
     final result = _result;
     if (result != null) {
-      // TODO(다음 단계): 임시 디버그 표시 — 제대로 된 카드 UI 로 교체할 것
-      return Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          result.entries.map((e) => '${e.key}: ${_format(e.value)}').join('\n'),
-          style: const TextStyle(fontSize: 14, height: 1.5),
-        ),
-      );
+      return ResultCardView(result: result);
     }
-    return const Text('촬영 완료', textAlign: TextAlign.center);
-  }
-
-  /// 리스트는 쉼표로 이어 붙이고, 나머지는 그대로 문자열로.
-  String _format(dynamic value) {
-    if (value is List) {
-      return value.isEmpty ? '(없음)' : value.join(', ');
-    }
-    return '$value';
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 32),
+      child: Text('촬영 완료', textAlign: TextAlign.center),
+    );
   }
 }
