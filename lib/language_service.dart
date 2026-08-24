@@ -25,6 +25,7 @@ class AppLanguage {
     required this.prohibitedTitle,
     required this.viewAllButton,
     // 탭 / 화면 제목
+    required this.cameraLabel,
     required this.historyLabel,
     required this.menuLabel,
     required this.cameraAppBarTitle,
@@ -48,6 +49,16 @@ class AppLanguage {
     required this.errorStatusCodeTemplate,
     required this.errorGeneric,
     required this.errorNetworkOrApi,
+    // 홈 화면
+    required this.safetyMessages,
+    required this.searchPlaceholder,
+    required this.categoryLogistics,
+    required this.categoryElectrical,
+    required this.categoryWoodworking,
+    required this.categoryWelding,
+    required this.categoryPress,
+    required this.dangerSignageTitle,
+    required this.comingSoonMessage,
   });
 
   /// shared_preferences 에 저장되는 값 (ko/en/vi)
@@ -80,6 +91,9 @@ class AppLanguage {
 
   /// 홈 화면의 최근 기록 미리보기에서 최근 기록 탭으로 이동하는 버튼.
   final String viewAllButton;
+
+  /// 하단 탭의 카메라 항목 라벨.
+  final String cameraLabel;
 
   /// 하단 탭 라벨과 최근 기록 화면 AppBar 제목에 공통으로 쓰인다.
   final String historyLabel;
@@ -118,6 +132,22 @@ class AppLanguage {
   final String errorGeneric;
   final String errorNetworkOrApi;
 
+  /// 홈 화면 상단에서 일정 시간마다 돌아가며 표시되는 안전 멘트 5개.
+  final List<String> safetyMessages;
+  final String searchPlaceholder;
+
+  final String categoryLogistics;
+  final String categoryElectrical;
+  final String categoryWoodworking;
+  final String categoryWelding;
+  final String categoryPress;
+
+  /// 홈 화면 하단, 선택된 카테고리의 표지판 카드 그리드 제목.
+  final String dangerSignageTitle;
+
+  /// 아직 구현되지 않은 화면에 쓰는 안내 문구.
+  final String comingSoonMessage;
+
   static const ko = AppLanguage._(
     code: 'ko',
     label: '한국어',
@@ -134,6 +164,7 @@ class AppLanguage {
     ppeTitle: '필요 보호구',
     prohibitedTitle: '금지 행동',
     viewAllButton: '전체 보기',
+    cameraLabel: '카메라',
     historyLabel: '최근 기록',
     menuLabel: '메뉴',
     cameraAppBarTitle: 'WorkSafe · 카메라',
@@ -154,6 +185,21 @@ class AppLanguage {
     errorStatusCodeTemplate: '인식 실패 (상태코드: {code})',
     errorGeneric: '인식 실패',
     errorNetworkOrApi: '인식 실패 (네트워크 또는 API 오류)',
+    safetyMessages: [
+      '안전하게, 작업 전 보호구를 확인하세요',
+      '위험한 기계는 카메라로 비춰 확인하세요',
+      '몸이 아프면 참지 말고 관리자에게 알리세요',
+      '비상정지 버튼 위치를 미리 확인해 두세요',
+      '더운 날엔 물을 자주 마시고 쉬어가세요',
+    ],
+    searchPlaceholder: '검색',
+    categoryLogistics: '물류',
+    categoryElectrical: '전기',
+    categoryWoodworking: '목공',
+    categoryWelding: '용접',
+    categoryPress: '프레스',
+    dangerSignageTitle: '위험 표지판',
+    comingSoonMessage: '준비 중입니다',
   );
 
   static const en = AppLanguage._(
@@ -173,6 +219,7 @@ class AppLanguage {
     ppeTitle: 'Required PPE',
     prohibitedTitle: 'Prohibited Actions',
     viewAllButton: 'View All',
+    cameraLabel: 'Camera',
     historyLabel: 'History',
     menuLabel: 'Menu',
     cameraAppBarTitle: 'WorkSafe · Camera',
@@ -196,6 +243,21 @@ class AppLanguage {
     errorStatusCodeTemplate: 'Recognition failed (status code: {code})',
     errorGeneric: 'Recognition failed',
     errorNetworkOrApi: 'Recognition failed (network or API error)',
+    safetyMessages: [
+      'Stay safe today—check your protective gear before work',
+      'Point your camera at unfamiliar machines to check them',
+      'If you feel unwell, tell your manager right away',
+      'Know where the emergency stop button is',
+      'Drink water often and take breaks on hot days',
+    ],
+    searchPlaceholder: 'Search',
+    categoryLogistics: 'Logistics',
+    categoryElectrical: 'Electrical',
+    categoryWoodworking: 'Woodworking',
+    categoryWelding: 'Welding',
+    categoryPress: 'Press',
+    dangerSignageTitle: 'Danger Signage',
+    comingSoonMessage: 'Coming soon',
   );
 
   static const vi = AppLanguage._(
@@ -215,6 +277,7 @@ class AppLanguage {
     ppeTitle: 'Thiết bị bảo hộ cần thiết',
     prohibitedTitle: 'Hành động cấm',
     viewAllButton: 'Xem tất cả',
+    cameraLabel: 'Máy ảnh',
     historyLabel: 'Lịch sử',
     menuLabel: 'Menu',
     cameraAppBarTitle: 'WorkSafe · Máy ảnh',
@@ -238,6 +301,21 @@ class AppLanguage {
     errorStatusCodeTemplate: 'Nhận diện thất bại (mã trạng thái: {code})',
     errorGeneric: 'Nhận diện thất bại',
     errorNetworkOrApi: 'Nhận diện thất bại (lỗi mạng hoặc API)',
+    safetyMessages: [
+      'Hãy an toàn hôm nay — kiểm tra đồ bảo hộ trước khi làm việc',
+      'Hãy chụp ảnh máy móc lạ để kiểm tra mức độ nguy hiểm',
+      'Nếu cảm thấy không khỏe, đừng cố chịu đựng — hãy báo ngay cho quản lý',
+      'Hãy xác định trước vị trí nút dừng khẩn cấp',
+      'Vào ngày nóng, hãy uống nước thường xuyên và nghỉ ngơi',
+    ],
+    searchPlaceholder: 'Tìm kiếm',
+    categoryLogistics: 'Hậu cần',
+    categoryElectrical: 'Điện',
+    categoryWoodworking: 'Mộc',
+    categoryWelding: 'Hàn',
+    categoryPress: 'Máy ép',
+    dangerSignageTitle: 'Biển báo nguy hiểm',
+    comingSoonMessage: 'Đang chuẩn bị',
   );
 
   static const all = [ko, en, vi];
