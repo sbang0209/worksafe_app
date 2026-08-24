@@ -19,6 +19,8 @@ class AppLanguage {
     required this.backToListButton,
     required this.viewRecordButton,
     required this.confirmButton,
+    required this.cancelButton,
+    required this.deleteButton,
     // 결과 카드 섹션 제목
     required this.hazardsTitle,
     required this.ppeTitle,
@@ -31,6 +33,15 @@ class AppLanguage {
     required this.historyDetailTitle,
     required this.languageSettingsLabel,
     required this.languageSectionHeader,
+    required this.howToUseLabel,
+    required this.howToUseSteps,
+    required this.appInfoLabel,
+    required this.appDescription,
+    required this.clearHistoryLabel,
+    required this.clearHistoryConfirmMessage,
+    required this.historyClearedMessage,
+    required this.logoutLabel,
+    required this.logoutConfirmMessage,
     // 다이얼로그
     required this.duplicateDialogTitle,
     required this.duplicateDialogBodyTemplate,
@@ -94,6 +105,8 @@ class AppLanguage {
   final String backToListButton;
   final String viewRecordButton;
   final String confirmButton;
+  final String cancelButton;
+  final String deleteButton;
 
   final String hazardsTitle;
   final String ppeTitle;
@@ -115,6 +128,30 @@ class AppLanguage {
   /// 메뉴 목록 항목과 언어 설정 화면 AppBar 제목에 공통으로 쓰인다.
   final String languageSettingsLabel;
   final String languageSectionHeader;
+
+  /// 메뉴 목록 항목이자 사용 방법 다이얼로그의 제목에 함께 쓰인다.
+  final String howToUseLabel;
+
+  /// 사용 방법 다이얼로그에 번호를 붙여 한 줄씩 보여줄 단계 설명.
+  /// 글을 많이 읽지 않아도 되게 짧은 문장으로 유지한다.
+  final List<String> howToUseSteps;
+
+  /// 메뉴 목록 항목이자 앱 정보 다이얼로그의 제목에 함께 쓰인다.
+  final String appInfoLabel;
+
+  /// 앱 정보 다이얼로그의 소개 한 줄.
+  final String appDescription;
+
+  /// 메뉴 목록 항목이자 기록 전체 삭제 확인 다이얼로그의 제목에 함께 쓰인다.
+  final String clearHistoryLabel;
+  final String clearHistoryConfirmMessage;
+
+  /// 기록을 모두 지운 뒤 띄우는 스낵바 문구.
+  final String historyClearedMessage;
+
+  /// 메뉴 목록의 로그아웃 항목이자, 확인 다이얼로그의 실행 버튼에 함께 쓰인다.
+  final String logoutLabel;
+  final String logoutConfirmMessage;
 
   final String duplicateDialogTitle;
 
@@ -189,6 +226,8 @@ class AppLanguage {
     backToListButton: '목록으로',
     viewRecordButton: '기록 보기',
     confirmButton: '확인',
+    cancelButton: '취소',
+    deleteButton: '삭제',
     hazardsTitle: '위험 요소',
     ppeTitle: '필요 보호구',
     prohibitedTitle: '금지 행동',
@@ -199,6 +238,19 @@ class AppLanguage {
     historyDetailTitle: '기록 상세',
     languageSettingsLabel: '언어 설정',
     languageSectionHeader: '분석 결과를 받을 언어',
+    howToUseLabel: '사용 방법',
+    howToUseSteps: [
+      '카메라 탭을 눌러 물건을 촬영하세요',
+      'AI가 물건과 안전 정보를 알려줘요',
+      '최근 기록에서 다시 볼 수 있어요',
+    ],
+    appInfoLabel: '앱 정보',
+    appDescription: '스마트제조 현장 외국인 근로자를 위한 안전 정보 앱',
+    clearHistoryLabel: '기록 전체 삭제',
+    clearHistoryConfirmMessage: '모든 기록을 삭제하시겠어요?\n저장된 사진도 함께 지워집니다.',
+    historyClearedMessage: '모든 기록을 삭제했어요',
+    logoutLabel: '로그아웃',
+    logoutConfirmMessage: '로그아웃 하시겠어요?',
     duplicateDialogTitle: '중복 촬영',
     duplicateDialogBodyTemplate: '오늘 이미 이 물건을 찍은 기록이 있어요.\n\n장비 품명 = {name}',
     noHistoryMessage: '아직 기록이 없어요',
@@ -252,6 +304,8 @@ class AppLanguage {
     backToListButton: 'Back to List',
     viewRecordButton: 'View Record',
     confirmButton: 'OK',
+    cancelButton: 'Cancel',
+    deleteButton: 'Delete',
     hazardsTitle: 'Hazards',
     ppeTitle: 'Required PPE',
     prohibitedTitle: 'Prohibited Actions',
@@ -262,6 +316,21 @@ class AppLanguage {
     historyDetailTitle: 'Record Details',
     languageSettingsLabel: 'Language Settings',
     languageSectionHeader: 'Language for analysis results',
+    howToUseLabel: 'How to Use',
+    howToUseSteps: [
+      'Tap the Camera tab and take a photo of the item',
+      'AI tells you what it is and how to stay safe',
+      'You can see it again in History',
+    ],
+    appInfoLabel: 'App Info',
+    appDescription:
+        'A safety information app for foreign workers in smart manufacturing',
+    clearHistoryLabel: 'Delete All Records',
+    clearHistoryConfirmMessage:
+        'Delete all records?\nSaved photos will be deleted too.',
+    historyClearedMessage: 'All records deleted',
+    logoutLabel: 'Log Out',
+    logoutConfirmMessage: 'Do you want to log out?',
     duplicateDialogTitle: 'Duplicate Photo',
     duplicateDialogBodyTemplate:
         'You already have a record of this item today.\n\nItem name = {name}',
@@ -318,6 +387,8 @@ class AppLanguage {
     backToListButton: 'Về danh sách',
     viewRecordButton: 'Xem bản ghi',
     confirmButton: 'Đồng ý',
+    cancelButton: 'Hủy',
+    deleteButton: 'Xóa',
     hazardsTitle: 'Nguy cơ',
     ppeTitle: 'Thiết bị bảo hộ cần thiết',
     prohibitedTitle: 'Hành động cấm',
@@ -328,6 +399,21 @@ class AppLanguage {
     historyDetailTitle: 'Chi tiết bản ghi',
     languageSettingsLabel: 'Cài đặt ngôn ngữ',
     languageSectionHeader: 'Ngôn ngữ nhận kết quả phân tích',
+    howToUseLabel: 'Hướng dẫn sử dụng',
+    howToUseSteps: [
+      'Nhấn tab Máy ảnh và chụp ảnh vật cần kiểm tra',
+      'AI cho bạn biết đó là gì và cách làm việc an toàn',
+      'Bạn có thể xem lại trong Lịch sử',
+    ],
+    appInfoLabel: 'Thông tin ứng dụng',
+    appDescription:
+        'Ứng dụng thông tin an toàn cho lao động nước ngoài tại nhà máy thông minh',
+    clearHistoryLabel: 'Xóa toàn bộ lịch sử',
+    clearHistoryConfirmMessage:
+        'Xóa toàn bộ bản ghi?\nẢnh đã lưu cũng sẽ bị xóa.',
+    historyClearedMessage: 'Đã xóa toàn bộ bản ghi',
+    logoutLabel: 'Đăng xuất',
+    logoutConfirmMessage: 'Bạn có muốn đăng xuất không?',
     duplicateDialogTitle: 'Trùng lặp ảnh chụp',
     duplicateDialogBodyTemplate:
         'Hôm nay bạn đã chụp vật này rồi.\n\nTên thiết bị = {name}',

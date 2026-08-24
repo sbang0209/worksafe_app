@@ -40,6 +40,7 @@ String categoryName(SignageCategory category, AppLanguage language) {
 class Signage {
   const Signage({
     required this.category,
+    required this.assetName,
     required this.icon,
     required this.color,
     required this.nameKo,
@@ -48,18 +49,20 @@ class Signage {
     required this.descriptionKo,
     required this.descriptionEn,
     required this.descriptionVi,
-    this.imagePath,
   });
 
   final SignageCategory category;
 
-  /// 실제 사진이 없을 때 자리 표시로 쓰는 아이콘/색.
+  /// assets/signs/ 아래 표지판 그림의 파일명(확장자 제외).
+  /// 여러 표지판이 같은 그림을 공유할 수 있다(예: 고전압/감전 → high_voltage).
+  final String assetName;
+
+  /// 그림을 불러오지 못했을 때 자리 표시로 쓰는 아이콘/색.
   final IconData icon;
   final Color color;
 
-  /// 나중에 실제 표지판 사진 경로(또는 URL)로 채울 자리. 지금은 항상 null 이라
-  /// [icon]/[color] 로 만든 자리표시 박스가 대신 그려진다.
-  final String? imagePath;
+  /// 실제로 화면에 넘길 애셋 경로.
+  String get imageAsset => 'assets/signs/$assetName.png';
 
   final String nameKo;
   final String nameEn;
@@ -96,6 +99,7 @@ const List<Signage> signageCatalog = [
   // 물류
   Signage(
     category: SignageCategory.logistics,
+    assetName: 'forklift',
     icon: Icons.forklift,
     color: Colors.orange,
     nameKo: '지게차 주의',
@@ -108,6 +112,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.logistics,
+    assetName: 'falling_object',
     icon: Icons.warning_amber,
     color: Colors.orange,
     nameKo: '낙하물 주의',
@@ -119,6 +124,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.logistics,
+    assetName: 'safety_shoes',
     icon: Icons.health_and_safety,
     color: Colors.blue,
     nameKo: '안전화 착용',
@@ -130,6 +136,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.logistics,
+    assetName: 'hanging_load',
     icon: Icons.scale,
     color: Colors.orange,
     nameKo: '중량물 주의',
@@ -142,6 +149,7 @@ const List<Signage> signageCatalog = [
   // 전기
   Signage(
     category: SignageCategory.electrical,
+    assetName: 'high_voltage',
     icon: Icons.bolt,
     color: Colors.red,
     nameKo: '고전압 주의',
@@ -153,6 +161,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.electrical,
+    assetName: 'high_voltage',
     icon: Icons.flash_on,
     color: Colors.red,
     nameKo: '감전 주의',
@@ -164,6 +173,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.electrical,
+    assetName: 'safety_gloves',
     icon: Icons.health_and_safety,
     color: Colors.blue,
     nameKo: '절연장갑 착용',
@@ -175,6 +185,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.electrical,
+    assetName: 'danger_zone',
     icon: Icons.power_off,
     color: Colors.blue,
     nameKo: '전원 차단 확인',
@@ -187,6 +198,7 @@ const List<Signage> signageCatalog = [
   // 목공
   Signage(
     category: SignageCategory.woodworking,
+    assetName: 'danger_zone',
     icon: Icons.pan_tool,
     color: Colors.orange,
     nameKo: '손 끼임 주의',
@@ -198,6 +210,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.woodworking,
+    assetName: 'eye_protection',
     icon: Icons.visibility,
     color: Colors.blue,
     nameKo: '보안경 착용',
@@ -209,6 +222,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.woodworking,
+    assetName: 'ear_protection',
     icon: Icons.hearing,
     color: Colors.orange,
     nameKo: '소음 주의',
@@ -220,6 +234,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.woodworking,
+    assetName: 'slip',
     icon: Icons.content_cut,
     color: Colors.orange,
     nameKo: '절단 주의',
@@ -232,6 +247,7 @@ const List<Signage> signageCatalog = [
   // 용접
   Signage(
     category: SignageCategory.welding,
+    assetName: 'no_fire',
     icon: Icons.local_fire_department,
     color: Colors.red,
     nameKo: '화기 주의',
@@ -243,6 +259,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.welding,
+    assetName: 'face_shield',
     icon: Icons.health_and_safety,
     color: Colors.blue,
     nameKo: '용접면 착용',
@@ -254,6 +271,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.welding,
+    assetName: 'gas_mask',
     icon: Icons.air,
     color: Colors.orange,
     nameKo: '유독가스 주의',
@@ -265,6 +283,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.welding,
+    assetName: 'high_temp',
     icon: Icons.whatshot,
     color: Colors.orange,
     nameKo: '화상 주의',
@@ -277,6 +296,7 @@ const List<Signage> signageCatalog = [
   // 프레스
   Signage(
     category: SignageCategory.press,
+    assetName: 'danger_zone',
     icon: Icons.back_hand,
     color: Colors.orange,
     nameKo: '손 끼임 주의',
@@ -288,6 +308,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.press,
+    assetName: 'helmet',
     icon: Icons.shield,
     color: Colors.blue,
     nameKo: '방호장치 확인',
@@ -299,6 +320,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.press,
+    assetName: 'slip',
     icon: Icons.emergency,
     color: Colors.red,
     nameKo: '비상정지',
@@ -310,6 +332,7 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.press,
+    assetName: 'hanging_load',
     icon: Icons.front_hand,
     color: Colors.blue,
     nameKo: '양수조작 확인',

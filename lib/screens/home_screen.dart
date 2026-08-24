@@ -53,11 +53,11 @@ class HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              height: 140,
+              height: 180,
               child: SignageImage(
                 icon: signage.icon,
                 color: signage.color,
-                imagePath: signage.imagePath,
+                assetPath: signage.imageAsset,
                 iconSize: 56,
                 borderRadius: 16,
               ),
@@ -488,7 +488,7 @@ class _SignageCard extends StatelessWidget {
                 child: SignageImage(
                   icon: signage.icon,
                   color: signage.color,
-                  imagePath: signage.imagePath,
+                  assetPath: signage.imageAsset,
                 ),
               ),
               const SizedBox(height: 6),
