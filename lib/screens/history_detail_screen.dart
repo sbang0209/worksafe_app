@@ -18,41 +18,38 @@ class HistoryDetailScreen extends StatelessWidget {
     final language = LanguageService.instance.current;
     return Scaffold(
       appBar: AppBar(title: Text(language.historyDetailTitle)),
-      body: Container(
-        color: kResultBackground,
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 260,
-                    child: Image.file(
-                      File(entry.imagePath),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) => Container(
-                        color: Colors.grey.shade300,
-                        alignment: Alignment.center,
-                        child: const Icon(Icons.broken_image, size: 48),
-                      ),
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 260,
+                  child: Image.file(
+                    File(entry.imagePath),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => Container(
+                      color: Colors.grey.shade300,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.broken_image, size: 48),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                ResultCardView(result: entry.result),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back),
-                  label: Text(language.backToListButton),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              ResultCardView(result: entry.result),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: Text(language.backToListButton),
+              ),
+            ],
           ),
         ),
       ),

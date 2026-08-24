@@ -2,6 +2,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'app_colors.dart';
 import 'language_service.dart';
 import 'screens/main_tab_screen.dart';
 
@@ -34,7 +35,8 @@ class WorkSafeApp extends StatelessWidget {
       title: 'WorkSafe',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0)),
+        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.seed),
+        scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
       home: const MainTabScreen(),

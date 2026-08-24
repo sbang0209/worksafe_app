@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../gemini_service.dart';
 import '../history_service.dart';
 import '../language_service.dart';
@@ -118,7 +119,7 @@ class _CameraScreenState extends State<CameraScreen> {
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kResultBackground,
+        backgroundColor: AppColors.background,
         title: Text(language.duplicateDialogTitle),
         content: Text(
           language.duplicateDialogBodyTemplate.replaceFirst('{name}', name),
@@ -162,15 +163,7 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(language.cameraAppBarTitle),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: _buildBody(language),
-    );
+    return Scaffold(backgroundColor: Colors.black, body: _buildBody(language));
   }
 
   Widget _buildBody(AppLanguage language) {
@@ -231,10 +224,20 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ),
         Positioned(
-          top: 24,
-          child: Text(
-            language.cameraOverlayHint,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: Center(
+                child: Text(
+                  language.cameraOverlayHint,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ),
           ),
         ),
         SafeArea(
@@ -268,9 +271,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Widget _buildResultView(String path, AppLanguage language) {
     return Container(
-      color: kResultBackground,
+      color: AppColors.background,
       child: SafeArea(
-        top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(

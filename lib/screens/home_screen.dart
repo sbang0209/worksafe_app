@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../language_service.dart';
 import '../signage_data.dart';
 import '../widgets/signage_image.dart';
@@ -101,7 +102,6 @@ class HomeScreenState extends State<HomeScreen> {
     final signageItems = signageForCategory(_selectedCategory);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFBEA),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -190,12 +190,12 @@ class _SafetyBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
-        color: Colors.amber.shade300,
+        color: AppColors.banner,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          Icon(Icons.campaign, color: Colors.amber.shade900, size: 28),
+          Icon(Icons.campaign, color: AppColors.accentDark, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: AnimatedSwitcher(
@@ -207,7 +207,7 @@ class _SafetyBanner extends StatelessWidget {
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   height: 1.4,
-                  color: Colors.amber.shade900,
+                  color: AppColors.accentDark,
                 ),
               ),
             ),
@@ -270,11 +270,11 @@ class _CategoryButton extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: selected ? Colors.amber.shade800 : Colors.white,
+                color: selected ? AppColors.accent : Colors.white,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: AppColors.cardShadow,
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -282,7 +282,7 @@ class _CategoryButton extends StatelessWidget {
               ),
               child: Icon(
                 icon,
-                color: selected ? Colors.white : Colors.amber.shade800,
+                color: selected ? Colors.white : AppColors.accent,
                 size: 26,
               ),
             ),
@@ -295,7 +295,7 @@ class _CategoryButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? Colors.amber.shade900 : Colors.black87,
+                color: selected ? AppColors.accentDark : Colors.black87,
               ),
             ),
           ],
@@ -322,7 +322,7 @@ class _SignageCard extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(14),
       elevation: 1.5,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: AppColors.cardShadow,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,

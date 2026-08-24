@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../language_service.dart';
 
 /// "분석 결과를 받을 언어" 를 고르는 화면.
@@ -59,7 +60,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
                       style: const TextStyle(fontSize: 17),
                     ),
                     trailing: selected.code == language.code
-                        ? const Icon(Icons.check, color: Colors.blue)
+                        ? Icon(Icons.check, color: AppColors.accent)
                         : null,
                     onTap: () => _select(language),
                   ),

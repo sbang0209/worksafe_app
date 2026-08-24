@@ -32,7 +32,6 @@ class HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
     return Scaffold(
-      backgroundColor: Colors.grey.shade200,
       appBar: AppBar(title: Text(language.historyLabel)),
       body: _buildBody(language),
     );

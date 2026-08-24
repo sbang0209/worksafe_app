@@ -28,7 +28,6 @@ class AppLanguage {
     required this.cameraLabel,
     required this.historyLabel,
     required this.menuLabel,
-    required this.cameraAppBarTitle,
     required this.historyDetailTitle,
     required this.languageSettingsLabel,
     required this.languageSectionHeader,
@@ -100,7 +99,6 @@ class AppLanguage {
 
   /// 하단 탭 라벨과 메뉴 화면 AppBar 제목에 공통으로 쓰인다.
   final String menuLabel;
-  final String cameraAppBarTitle;
   final String historyDetailTitle;
 
   /// 메뉴 목록 항목과 언어 설정 화면 AppBar 제목에 공통으로 쓰인다.
@@ -167,7 +165,6 @@ class AppLanguage {
     cameraLabel: '카메라',
     historyLabel: '최근 기록',
     menuLabel: '메뉴',
-    cameraAppBarTitle: 'WorkSafe · 카메라',
     historyDetailTitle: '기록 상세',
     languageSettingsLabel: '언어 설정',
     languageSectionHeader: '분석 결과를 받을 언어',
@@ -222,7 +219,6 @@ class AppLanguage {
     cameraLabel: 'Camera',
     historyLabel: 'History',
     menuLabel: 'Menu',
-    cameraAppBarTitle: 'WorkSafe · Camera',
     historyDetailTitle: 'Record Details',
     languageSettingsLabel: 'Language Settings',
     languageSectionHeader: 'Language for analysis results',
@@ -280,7 +276,6 @@ class AppLanguage {
     cameraLabel: 'Máy ảnh',
     historyLabel: 'Lịch sử',
     menuLabel: 'Menu',
-    cameraAppBarTitle: 'WorkSafe · Máy ảnh',
     historyDetailTitle: 'Chi tiết bản ghi',
     languageSettingsLabel: 'Cài đặt ngôn ngữ',
     languageSectionHeader: 'Ngôn ngữ nhận kết quả phân tích',

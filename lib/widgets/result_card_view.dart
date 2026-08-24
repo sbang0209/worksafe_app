@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../language_service.dart';
 
 const String _unknown = '알 수 없음';
@@ -10,10 +11,6 @@ final Set<String> _unknownLabels = {
 };
 
 bool _isUnknown(String value) => _unknownLabels.contains(value);
-
-/// 결과 카드 화면(촬영 직후 결과, 기록 상세)의 배경색.
-/// 순백 대신 살짝 톤 다운된 오프화이트로, 옅은 회색 카드와는 구분되게 한다.
-const Color kResultBackground = Color(0xFFFBF8F2);
 
 /// [GeminiService.analyzeObject] 가 돌려주는 분석 결과 Map 을
 /// 카드 UI 로 그려주는 위젯.
@@ -111,8 +108,15 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,14 +230,14 @@ class _ManagerNoticeBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.amber.shade100,
+        color: AppColors.accentLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber.shade800, width: 2),
+        border: Border.all(color: AppColors.accent, width: 2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.campaign, color: Colors.amber.shade900, size: 24),
+          Icon(Icons.campaign, color: AppColors.accentDark, size: 24),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -241,7 +245,7 @@ class _ManagerNoticeBox extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.amber.shade900,
+                color: AppColors.accentDark,
                 height: 1.4,
               ),
             ),

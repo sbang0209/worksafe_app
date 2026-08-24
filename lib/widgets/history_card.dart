@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../history_service.dart';
 import '../language_service.dart';
 
@@ -34,7 +35,7 @@ class HistoryCard extends StatelessWidget {
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.15),
+      shadowColor: AppColors.cardShadow,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,

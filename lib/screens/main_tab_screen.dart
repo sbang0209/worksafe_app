@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../language_service.dart';
 import 'camera_screen.dart';
 import 'history_screen.dart';
@@ -79,8 +80,8 @@ class _MainTabScreenState extends State<MainTabScreen> {
           bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,
-            selectedItemColor: Colors.amber.shade800,
-            unselectedItemColor: Colors.grey.shade500,
+            selectedItemColor: AppColors.accent,
+            unselectedItemColor: AppColors.neutral,
             currentIndex: _navBarIndex,
             onTap: _onNavTap,
             items: [
