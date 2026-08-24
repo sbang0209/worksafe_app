@@ -230,12 +230,38 @@ class _CameraScreenState extends State<CameraScreen> {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.only(top: 24),
-              child: Center(
-                child: Text(
-                  language.cameraOverlayHint,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  // 카메라를 닫고 원래 보던 탭 화면으로 돌아간다.
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back),
+                    color: Colors.white,
+                    iconSize: 28,
+                    tooltip: language.homeLabel,
+                  ),
+                  // 뒤로가기 버튼과 같은 폭을 오른쪽에도 비워둬야 안내 문구가
+                  // 버튼에 밀리지 않고 화면 한가운데에 놓인다.
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        language.cameraOverlayHint,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          shadows: [
+                            Shadow(blurRadius: 4, color: Colors.black54),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
               ),
             ),
           ),

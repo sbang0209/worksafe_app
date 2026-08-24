@@ -56,8 +56,19 @@ class AppLanguage {
     required this.categoryWoodworking,
     required this.categoryWelding,
     required this.categoryPress,
+    required this.noticeTitle,
+    required this.expandLabel,
+    required this.collapseLabel,
+    required this.employeeNumberTemplate,
     required this.dangerSignageTitle,
     required this.comingSoonMessage,
+    // 스플래시 화면
+    required this.appSlogan,
+    // 로그인 화면
+    required this.loginIdLabel,
+    required this.loginPasswordLabel,
+    required this.loginButton,
+    required this.loginFailedMessage,
   });
 
   /// shared_preferences 에 저장되는 값 (ko/en/vi)
@@ -140,11 +151,31 @@ class AppLanguage {
   final String categoryWelding;
   final String categoryPress;
 
+  /// 홈 화면 맨 위, 안전 멘트가 돌아가는 영역의 제목.
+  final String noticeTitle;
+
+  /// 공지사항 접기/펼치기 화살표의 툴팁. 지금 상태의 반대 동작을 가리킨다.
+  final String expandLabel;
+  final String collapseLabel;
+
+  /// 홈 화면 프로필의 사원번호 줄. '{number}' 자리를 사원번호로 치환해서 쓴다.
+  final String employeeNumberTemplate;
+
   /// 홈 화면 하단, 선택된 카테고리의 표지판 카드 그리드 제목.
   final String dangerSignageTitle;
 
   /// 아직 구현되지 않은 화면에 쓰는 안내 문구.
   final String comingSoonMessage;
+
+  /// 스플래시 화면에서 앱 이름 아래에 뜨는 슬로건. 현재 언어의 것 하나만 보여준다.
+  final String appSlogan;
+
+  final String loginIdLabel;
+  final String loginPasswordLabel;
+  final String loginButton;
+
+  /// 아이디/비밀번호가 [DemoAccount] 와 다를 때 입력창 아래에 뜨는 문구.
+  final String loginFailedMessage;
 
   static const ko = AppLanguage._(
     code: 'ko',
@@ -195,8 +226,17 @@ class AppLanguage {
     categoryWoodworking: '목공',
     categoryWelding: '용접',
     categoryPress: '프레스',
+    noticeTitle: '공지사항',
+    expandLabel: '펼치기',
+    collapseLabel: '접기',
+    employeeNumberTemplate: '사원번호 {number}',
     dangerSignageTitle: '위험 표지판',
     comingSoonMessage: '준비 중입니다',
+    appSlogan: '일 할때도 안전하게',
+    loginIdLabel: '아이디',
+    loginPasswordLabel: '비밀번호',
+    loginButton: '로그인',
+    loginFailedMessage: '아이디 또는 비밀번호가 올바르지 않습니다',
   );
 
   static const en = AppLanguage._(
@@ -252,8 +292,17 @@ class AppLanguage {
     categoryWoodworking: 'Woodworking',
     categoryWelding: 'Welding',
     categoryPress: 'Press',
+    noticeTitle: 'Notices',
+    expandLabel: 'Expand',
+    collapseLabel: 'Collapse',
+    employeeNumberTemplate: 'Employee No. {number}',
     dangerSignageTitle: 'Danger Signage',
     comingSoonMessage: 'Coming soon',
+    appSlogan: 'Safe at every job',
+    loginIdLabel: 'ID',
+    loginPasswordLabel: 'Password',
+    loginButton: 'Log In',
+    loginFailedMessage: 'The ID or password is incorrect',
   );
 
   static const vi = AppLanguage._(
@@ -309,8 +358,17 @@ class AppLanguage {
     categoryWoodworking: 'Mộc',
     categoryWelding: 'Hàn',
     categoryPress: 'Máy ép',
+    noticeTitle: 'Thông báo',
+    expandLabel: 'Mở rộng',
+    collapseLabel: 'Thu gọn',
+    employeeNumberTemplate: 'Mã nhân viên {number}',
     dangerSignageTitle: 'Biển báo nguy hiểm',
     comingSoonMessage: 'Đang chuẩn bị',
+    appSlogan: 'An toàn trong mọi công việc',
+    loginIdLabel: 'Tên đăng nhập',
+    loginPasswordLabel: 'Mật khẩu',
+    loginButton: 'Đăng nhập',
+    loginFailedMessage: 'Tên đăng nhập hoặc mật khẩu không đúng',
   );
 
   static const all = [ko, en, vi];

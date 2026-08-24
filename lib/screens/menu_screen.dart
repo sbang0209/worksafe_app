@@ -12,16 +12,20 @@ class MenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
     return Scaffold(
-      appBar: AppBar(title: Text(language.menuLabel)),
+      appBar: AppBar(title: Text(language.menuLabel), centerTitle: true),
       body: ListView(
         children: [
           ListTile(
-            leading: const Icon(Icons.language),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 10,
+            ),
+            leading: const Icon(Icons.language, size: 30),
             title: Text(
               language.languageSettingsLabel,
-              style: const TextStyle(fontSize: 17),
+              style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w600),
             ),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Icons.chevron_right, size: 28),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
