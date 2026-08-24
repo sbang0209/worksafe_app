@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
+import '../demo_profile.dart';
 import '../language_service.dart';
 import '../signage_data.dart';
 import '../widgets/signage_image.dart';
-import 'camera_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -37,12 +37,6 @@ class HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _messageTimer?.cancel();
     super.dispose();
-  }
-
-  Future<void> _openCamera() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const CameraScreen()));
   }
 
   void _selectCategory(SignageCategory category) {
@@ -108,20 +102,19 @@ class HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: _openCamera,
-                  icon: const Icon(Icons.camera_alt, size: 18),
-                  label: Text(language.takePhotoButton),
+              _ProfileNoticeCard(
+                name: DemoProfile.name,
+                employeeNumber: language.employeeNumberTemplate.replaceAll(
+                  '{number}',
+                  DemoProfile.employeeNumber,
                 ),
-              ),
-              const SizedBox(height: 12),
-              _SafetyBanner(
+                noticeTitle: language.noticeTitle,
                 message: messages[messageIndex],
-                index: messageIndex,
+                messageIndex: messageIndex,
+                expandLabel: language.expandLabel,
+                collapseLabel: language.collapseLabel,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               _SearchField(hintText: language.searchPlaceholder),
               const SizedBox(height: 20),
               Row(
@@ -139,13 +132,7 @@ class HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 28),
-              Text(
-                language.dangerSignageTitle,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _SectionTitle(language.dangerSignageTitle),
               const SizedBox(height: 12),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 250),
@@ -178,8 +165,185 @@ class HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _SafetyBanner extends StatelessWidget {
-  const _SafetyBanner({required this.message, required this.index});
+/// 홈 화면의 섹션 제목(공지사항 / 위험 표지판)에 공통으로 쓰는 스타일.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    );
+  }
+}
+
+/// 홈 화면 맨 위 카드. 위쪽 공지사항은 접었다 펼 수 있고, 아래쪽 프로필은 항상 보인다.
+class _ProfileNoticeCard extends StatefulWidget {
+  const _ProfileNoticeCard({
+    required this.name,
+    required this.employeeNumber,
+    required this.noticeTitle,
+    required this.message,
+    required this.messageIndex,
+    required this.expandLabel,
+    required this.collapseLabel,
+  });
+
+  final String name;
+  final String employeeNumber;
+  final String noticeTitle;
+
+  /// 지금 보여줄 안전 멘트와 그 인덱스(문구가 바뀔 때 페이드 전환용 키).
+  final String message;
+  final int messageIndex;
+
+  final String expandLabel;
+  final String collapseLabel;
+
+  @override
+  State<_ProfileNoticeCard> createState() => _ProfileNoticeCardState();
+}
+
+class _ProfileNoticeCardState extends State<_ProfileNoticeCard> {
+  /// 공지사항을 펼친 상태인지. 처음에는 펼쳐둔다.
+  bool _expanded = true;
+
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 제목 줄 전체를 눌러도 토글되게 해서 화살표만 겨냥하지 않아도 되게 한다.
+          InkWell(
+            onTap: _toggle,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.campaign, color: AppColors.accentDark, size: 22),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.noticeTitle,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: _expanded
+                        ? widget.collapseLabel
+                        : widget.expandLabel,
+                    child: Icon(
+                      _expanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: AppColors.accentDark,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 펼침/접힘을 높이 애니메이션으로 부드럽게 처리한다.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? _SafetyNotice(
+                    message: widget.message,
+                    index: widget.messageIndex,
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+          const SizedBox(height: 14),
+          Divider(color: AppColors.accentBorder, height: 1),
+          const SizedBox(height: 14),
+          _ProfileRow(
+            name: widget.name,
+            employeeNumber: widget.employeeNumber,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 카드 아래쪽의 프로필 줄. 표시값은 [DemoProfile] 고정값이다.
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({required this.name, required this.employeeNumber});
+
+  final String name;
+
+  /// 이미 언어별 문구로 조립된 사원번호 줄 (예: '사원번호 12345').
+  final String employeeNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // 프로필 사진이 아직 없어서 기본 사람 아이콘을 원형 배경 위에 얹는다.
+        CircleAvatar(
+          radius: 26,
+          backgroundColor: AppColors.accentLight,
+          child: Icon(Icons.person, size: 30, color: AppColors.accentDark),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                employeeNumber,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 카드 안에서 펼쳤을 때 보이는 안전 멘트.
+///
+/// 흰 카드 안에 또 상자를 만들면 "카드 속 카드"로 보여서, 배경도 테두리도 없이
+/// 글자만 가운데 정렬로 둔다.
+class _SafetyNotice extends StatelessWidget {
+  const _SafetyNotice({required this.message, required this.index});
 
   final String message;
   final int index;
@@ -188,31 +352,20 @@ class _SafetyBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-      decoration: BoxDecoration(
-        color: AppColors.banner,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.campaign, color: AppColors.accentDark, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
-              child: Text(
-                message,
-                key: ValueKey(index),
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  height: 1.4,
-                  color: AppColors.accentDark,
-                ),
-              ),
-            ),
+      padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: Text(
+          message,
+          key: ValueKey(index),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            height: 1.5,
+            color: AppColors.accentDark,
           ),
-        ],
+        ),
       ),
     );
   }
