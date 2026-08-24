@@ -15,11 +15,15 @@ class MainTabScreen extends StatefulWidget {
 class _MainTabScreenState extends State<MainTabScreen> {
   int _currentIndex = 0;
 
+  final _homeKey = GlobalKey<HomeScreenState>();
   final _historyKey = GlobalKey<HistoryScreenState>();
 
   void _onTap(int index) {
     setState(() => _currentIndex = index);
-    if (index == 1) {
+    if (index == 0) {
+      // 홈 탭으로 돌아올 때마다 최근 기록 미리보기를 다시 불러온다.
+      _homeKey.currentState?.reload();
+    } else if (index == 1) {
       // 최근 기록 탭으로 돌아올 때마다 최신 목록을 다시 불러온다.
       _historyKey.currentState?.reload();
     }
@@ -39,7 +43,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
           body: IndexedStack(
             index: _currentIndex,
             children: [
-              HomeScreen(),
+              HomeScreen(key: _homeKey, onViewAllHistory: () => _onTap(1)),
               HistoryScreen(key: _historyKey),
               MenuScreen(),
             ],

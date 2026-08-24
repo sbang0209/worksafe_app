@@ -23,6 +23,7 @@ class AppLanguage {
     required this.hazardsTitle,
     required this.ppeTitle,
     required this.prohibitedTitle,
+    required this.viewAllButton,
     // 탭 / 화면 제목
     required this.historyLabel,
     required this.menuLabel,
@@ -77,6 +78,9 @@ class AppLanguage {
   final String ppeTitle;
   final String prohibitedTitle;
 
+  /// 홈 화면의 최근 기록 미리보기에서 최근 기록 탭으로 이동하는 버튼.
+  final String viewAllButton;
+
   /// 하단 탭 라벨과 최근 기록 화면 AppBar 제목에 공통으로 쓰인다.
   final String historyLabel;
 
@@ -129,6 +133,7 @@ class AppLanguage {
     hazardsTitle: '위험 요소',
     ppeTitle: '필요 보호구',
     prohibitedTitle: '금지 행동',
+    viewAllButton: '전체 보기',
     historyLabel: '최근 기록',
     menuLabel: '메뉴',
     cameraAppBarTitle: 'WorkSafe · 카메라',
@@ -167,6 +172,7 @@ class AppLanguage {
     hazardsTitle: 'Hazards',
     ppeTitle: 'Required PPE',
     prohibitedTitle: 'Prohibited Actions',
+    viewAllButton: 'View All',
     historyLabel: 'History',
     menuLabel: 'Menu',
     cameraAppBarTitle: 'WorkSafe · Camera',
@@ -208,6 +214,7 @@ class AppLanguage {
     hazardsTitle: 'Nguy cơ',
     ppeTitle: 'Thiết bị bảo hộ cần thiết',
     prohibitedTitle: 'Hành động cấm',
+    viewAllButton: 'Xem tất cả',
     historyLabel: 'Lịch sử',
     menuLabel: 'Menu',
     cameraAppBarTitle: 'WorkSafe · Máy ảnh',
