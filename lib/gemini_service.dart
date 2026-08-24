@@ -17,9 +17,6 @@ const String kGeminiModel = 'gemini-2.5-flash-lite';
 const int _maxRetries = 4;
 const int _firstRetryDelaySeconds = 2;
 
-/// 재시도를 모두 소진했을 때 사용자에게 보여줄 문구
-const String _busyMessage = '서버가 혼잡합니다. 잠시 후 다시 시도하세요';
-
 /// [language] 로 값을 채우도록 지시하는 분석 프롬프트를 만든다.
 /// 지시문 자체는 한국어로 두고, "값은 이 언어로 써라" 만 지정한다.
 /// JSON 의 키 이름(name, category 등)은 항상 영어 그대로 유지한다.
@@ -61,7 +58,7 @@ class GeminiService {
     final apiKey = dotenv.env['GEMINI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       debugPrint('GeminiService: .env 에 GEMINI_API_KEY 가 없습니다');
-      return _fallback('인식 실패 (API 키 없음)', language);
+      return _fallback(language.errorNoApiKey, language);
     }
 
     try {
@@ -99,7 +96,12 @@ class GeminiService {
             response.statusCode == 429 ||
             response.statusCode == 500;
         return _fallback(
-          busy ? _busyMessage : '인식 실패 (상태코드: ${response.statusCode})',
+          busy
+              ? language.errorServerBusy
+              : language.errorStatusCodeTemplate.replaceFirst(
+                  '{code}',
+                  '${response.statusCode}',
+                ),
           language,
         );
       }
@@ -110,14 +112,14 @@ class GeminiService {
 
       if (text == null || text.trim().isEmpty) {
         debugPrint('GeminiService: 텍스트를 찾지 못했습니다. body=${response.body}');
-        return _fallback('인식 실패', language);
+        return _fallback(language.errorGeneric, language);
       }
 
       return _parseResult(text, language);
     } catch (e, stack) {
       debugPrint('GeminiService.analyzeObject 실패: $e');
       debugPrint('$stack');
-      return _fallback('인식 실패 (네트워크 또는 API 오류)', language);
+      return _fallback(language.errorNetworkOrApi, language);
     }
   }
 
@@ -162,7 +164,7 @@ class GeminiService {
       final decoded = jsonDecode(cleaned);
       if (decoded is! Map) {
         debugPrint('GeminiService: JSON 이 객체가 아닙니다. 원본 텍스트:\n$text');
-        return _fallback('인식 실패', language);
+        return _fallback(language.errorGeneric, language);
       }
       final result = _normalize(Map<String, dynamic>.from(decoded), language);
       result['manager_notice'] = language.managerNotice;
@@ -170,7 +172,7 @@ class GeminiService {
     } catch (e) {
       debugPrint('GeminiService: JSON 파싱 실패: $e');
       debugPrint('GeminiService: 원본 텍스트:\n$text');
-      return _fallback('인식 실패', language);
+      return _fallback(language.errorGeneric, language);
     }
   }
 

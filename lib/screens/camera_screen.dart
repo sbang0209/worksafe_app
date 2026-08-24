@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import '../app_colors.dart';
 import '../gemini_service.dart';
 import '../history_service.dart';
+import '../language_service.dart';
 import '../main.dart' show cameras;
 import '../widgets/result_card_view.dart';
 import 'history_detail_screen.dart';
@@ -101,9 +103,10 @@ class _CameraScreenState extends State<CameraScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isAnalyzing = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('촬영 실패: $e')));
+      final language = LanguageService.instance.current;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${language.captureFailedPrefix}$e')),
+      );
     }
   }
 
@@ -112,12 +115,15 @@ class _CameraScreenState extends State<CameraScreen> {
     required HistoryEntry existing,
     required String name,
   }) {
+    final language = LanguageService.instance.current;
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: kResultBackground,
-        title: const Text('중복 촬영'),
-        content: Text('오늘 이미 이 물건을 찍은 기록이 있어요.\n\n장비 품명 = $name'),
+        backgroundColor: AppColors.background,
+        title: Text(language.duplicateDialogTitle),
+        content: Text(
+          language.duplicateDialogBodyTemplate.replaceFirst('{name}', name),
+        ),
         actions: [
           Row(
             children: [
@@ -131,14 +137,14 @@ class _CameraScreenState extends State<CameraScreen> {
                       ),
                     );
                   },
-                  child: const Text('기록 보기'),
+                  child: Text(language.viewRecordButton),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('확인'),
+                  child: Text(language.confirmButton),
                 ),
               ),
             ],
@@ -156,32 +162,25 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('WorkSafe · 카메라'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-      ),
-      body: _buildBody(),
-    );
+    final language = LanguageService.instance.current;
+    return Scaffold(backgroundColor: Colors.black, body: _buildBody(language));
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppLanguage language) {
     if (cameras.isEmpty || _controller == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
-            '사용 가능한 카메라가 없습니다.\n실기기(USB 연결)에서 실행하세요.',
+            language.noCameraMessage,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70),
+            style: const TextStyle(color: Colors.white70),
           ),
         ),
       );
     }
     if (_capturedPath != null) {
-      return _buildResultView(_capturedPath!);
+      return _buildResultView(_capturedPath!, language);
     }
     return FutureBuilder<void>(
       future: _initFuture,
@@ -194,19 +193,22 @@ class _CameraScreenState extends State<CameraScreen> {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Text(
-                '카메라 초기화 실패: ${snapshot.error}\n권한을 허용했는지 확인하세요.',
+                language.cameraInitErrorTemplate.replaceFirst(
+                  '{error}',
+                  '${snapshot.error}',
+                ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70),
               ),
             ),
           );
         }
-        return _buildPreviewView();
+        return _buildPreviewView(language);
       },
     );
   }
 
-  Widget _buildPreviewView() {
+  Widget _buildPreviewView(AppLanguage language) {
     return Stack(
       alignment: Alignment.bottomCenter,
       children: [
@@ -221,11 +223,21 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
           ),
         ),
-        const Positioned(
-          top: 24,
-          child: Text(
-            '궁금한 물건을 네모 안에 맞추세요',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 24),
+              child: Center(
+                child: Text(
+                  language.cameraOverlayHint,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ),
           ),
         ),
         SafeArea(
@@ -257,11 +269,10 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Widget _buildResultView(String path) {
+  Widget _buildResultView(String path, AppLanguage language) {
     return Container(
-      color: kResultBackground,
+      color: AppColors.background,
       child: SafeArea(
-        top: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
@@ -276,7 +287,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildAnalysisBody(),
+              _buildAnalysisBody(language),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -284,7 +295,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     child: FilledButton.icon(
                       onPressed: _isAnalyzing ? null : _retake,
                       icon: const Icon(Icons.refresh),
-                      label: const Text('다시 찍기'),
+                      label: Text(language.retakeButton),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -292,7 +303,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     child: FilledButton.tonalIcon(
                       onPressed: _isAnalyzing ? null : _goHome,
                       icon: const Icon(Icons.home),
-                      label: const Text('홈'),
+                      label: Text(language.homeLabel),
                     ),
                   ),
                 ],
@@ -309,20 +320,20 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 분석 중이면 로딩 인디케이터를, 결과가 오면 카드 UI(ResultCardView)를 보여준다.
-  Widget _buildAnalysisBody() {
+  Widget _buildAnalysisBody(AppLanguage language) {
     if (_isAnalyzing) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(
+            const SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
-            SizedBox(width: 12),
-            Text('분석 중...', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 12),
+            Text(language.analyzingText, style: const TextStyle(fontSize: 16)),
           ],
         ),
       );
@@ -331,9 +342,9 @@ class _CameraScreenState extends State<CameraScreen> {
     if (result != null) {
       return ResultCardView(result: result);
     }
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 32),
-      child: Text('촬영 완료', textAlign: TextAlign.center),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Text(language.captureCompleteText, textAlign: TextAlign.center),
     );
   }
 }
