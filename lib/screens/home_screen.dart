@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../language_service.dart';
 import 'camera_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -7,6 +8,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final language = LanguageService.instance.current;
     return Scaffold(
       appBar: AppBar(title: const Text('WorkSafe')),
       body: Center(
@@ -17,7 +19,7 @@ class HomeScreen extends StatelessWidget {
             ).push(MaterialPageRoute(builder: (_) => const CameraScreen()));
           },
           icon: const Icon(Icons.camera_alt),
-          label: const Text('촬영하기'),
+          label: Text(language.takePhotoButton),
         ),
       ),
     );

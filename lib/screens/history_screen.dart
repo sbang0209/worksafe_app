@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../history_service.dart';
+import '../language_service.dart';
 import 'history_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -30,14 +31,15 @@ class HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final language = LanguageService.instance.current;
     return Scaffold(
       backgroundColor: Colors.grey.shade200,
-      appBar: AppBar(title: const Text('최근 기록')),
-      body: _buildBody(),
+      appBar: AppBar(title: Text(language.historyLabel)),
+      body: _buildBody(language),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppLanguage language) {
     final entries = _entries;
     if (entries == null) {
       return const Center(child: CircularProgressIndicator());
@@ -50,7 +52,7 @@ class HistoryScreenState extends State<HistoryScreen> {
             Icon(Icons.history, size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 12),
             Text(
-              '아직 기록이 없어요',
+              language.noHistoryMessage,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,

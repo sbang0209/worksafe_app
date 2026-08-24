@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../history_service.dart';
+import '../language_service.dart';
 import '../widgets/result_card_view.dart';
 
 /// 기록 목록에서 항목을 눌렀을 때 보여주는 상세 화면.
@@ -14,8 +15,9 @@ class HistoryDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final language = LanguageService.instance.current;
     return Scaffold(
-      appBar: AppBar(title: const Text('기록 상세')),
+      appBar: AppBar(title: Text(language.historyDetailTitle)),
       body: Container(
         color: kResultBackground,
         child: SafeArea(
@@ -47,7 +49,7 @@ class HistoryDetailScreen extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('목록으로'),
+                  label: Text(language.backToListButton),
                 ),
               ],
             ),

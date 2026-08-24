@@ -34,16 +34,18 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen> {
   Widget build(BuildContext context) {
     final selected = _selected;
     return Scaffold(
-      appBar: AppBar(title: const Text('언어 설정')),
+      appBar: AppBar(
+        title: Text((selected ?? AppLanguage.ko).languageSettingsLabel),
+      ),
       body: selected == null
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
                   child: Text(
-                    '분석 결과를 받을 언어',
-                    style: TextStyle(
+                    selected.languageSectionHeader,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey,

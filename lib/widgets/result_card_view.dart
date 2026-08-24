@@ -42,6 +42,7 @@ class ResultCardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final language = LanguageService.instance.current;
     final name = _text('name');
     final category = _text('category');
     final usage = _text('usage');
@@ -57,7 +58,7 @@ class ResultCardView extends StatelessWidget {
         if (hazards.isNotEmpty) ...[
           const SizedBox(height: 16),
           _SafetySection(
-            title: '위험 요소',
+            title: language.hazardsTitle,
             icon: Icons.warning_amber_rounded,
             items: hazards,
             background: Colors.orange.shade50,
@@ -67,7 +68,7 @@ class ResultCardView extends StatelessWidget {
         if (requiredPpe.isNotEmpty) ...[
           const SizedBox(height: 16),
           _SafetySection(
-            title: '필요 보호구',
+            title: language.ppeTitle,
             icon: Icons.health_and_safety,
             items: requiredPpe,
             background: Colors.blue.shade50,
@@ -77,7 +78,7 @@ class ResultCardView extends StatelessWidget {
         if (prohibited.isNotEmpty) ...[
           const SizedBox(height: 16),
           _SafetySection(
-            title: '금지 행동',
+            title: language.prohibitedTitle,
             icon: Icons.block,
             items: prohibited,
             background: Colors.red.shade50,
