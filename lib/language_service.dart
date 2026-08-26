@@ -62,6 +62,7 @@ class AppLanguage {
     // 홈 화면
     required this.safetyMessages,
     required this.searchPlaceholder,
+    required this.searchLaunchFailedMessage,
     required this.categoryLogistics,
     required this.categoryElectrical,
     required this.categoryWoodworking,
@@ -182,6 +183,9 @@ class AppLanguage {
   final List<String> safetyMessages;
   final String searchPlaceholder;
 
+  /// 검색어로 브라우저를 열지 못했을 때 보여주는 안내 문구.
+  final String searchLaunchFailedMessage;
+
   final String categoryLogistics;
   final String categoryElectrical;
   final String categoryWoodworking;
@@ -273,6 +277,7 @@ class AppLanguage {
       '더운 날엔 물을 자주 마시고 쉬어가세요',
     ],
     searchPlaceholder: '검색',
+    searchLaunchFailedMessage: '브라우저를 열 수 없어요',
     categoryLogistics: '물류',
     categoryElectrical: '전기',
     categoryWoodworking: '목공',
@@ -356,6 +361,7 @@ class AppLanguage {
       'Drink water often and take breaks on hot days',
     ],
     searchPlaceholder: 'Search',
+    searchLaunchFailedMessage: "Couldn't open the browser",
     categoryLogistics: 'Logistics',
     categoryElectrical: 'Electrical',
     categoryWoodworking: 'Woodworking',
@@ -439,6 +445,7 @@ class AppLanguage {
       'Vào ngày nóng, hãy uống nước thường xuyên và nghỉ ngơi',
     ],
     searchPlaceholder: 'Tìm kiếm',
+    searchLaunchFailedMessage: 'Không thể mở trình duyệt',
     categoryLogistics: 'Hậu cần',
     categoryElectrical: 'Điện',
     categoryWoodworking: 'Mộc',
