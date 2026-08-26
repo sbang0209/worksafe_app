@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
 import '../language_service.dart';
-
-const String _unknown = '알 수 없음';
+import '../result_localization.dart';
 
 /// 언어에 상관없이 "모름" 값을 판별하기 위한 전체 언어의 '모름' 문구 집합.
 final Set<String> _unknownLabels = {
@@ -15,38 +14,24 @@ bool _isUnknown(String value) => _unknownLabels.contains(value);
 /// [GeminiService.analyzeObject] 가 돌려주는 분석 결과 Map 을
 /// 카드 UI 로 그려주는 위젯.
 ///
-/// 촬영 직후 결과 화면과, 나중에 만들 기록 상세 화면에서 동일하게 재사용한다.
+/// 촬영 직후 결과 화면과 기록 상세 화면에서 동일하게 재사용한다. 결과의 각 값은
+/// 언어별 맵({'ko': ..., 'en': ..., 'vi': ...})이라, 현재 선택된 언어에 맞는
+/// 값만 뽑아 보여준다 — 나중에 언어를 바꾸면 같은 기록도 그 언어로 다시 그려진다.
+/// (언어별 저장을 도입하기 전에 저장된 예전 기록은 단일 문자열이라 그대로 표시된다.)
 class ResultCardView extends StatelessWidget {
   const ResultCardView({super.key, required this.result});
 
   final Map<String, dynamic> result;
 
-  String _text(String key) =>
-      (result[key] as String?)?.trim().isNotEmpty == true
-      ? (result[key] as String).trim()
-      : _unknown;
-
-  List<String> _list(String key) {
-    final value = result[key];
-    if (value is List) {
-      return value
-          .map((e) => e.toString())
-          .where((e) => e.trim().isNotEmpty)
-          .toList();
-    }
-    return const [];
-  }
-
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
-    final name = _text('name');
-    final category = _text('category');
-    final usage = _text('usage');
-    final hazards = _list('hazards');
-    final requiredPpe = _list('required_ppe');
-    final prohibited = _list('prohibited');
-    final managerNotice = (result['manager_notice'] as String?)?.trim();
+    final name = resolveLocalizedText(result['name'], language);
+    final category = resolveLocalizedText(result['category'], language);
+    final usage = resolveLocalizedText(result['usage'], language);
+    final hazards = resolveLocalizedList(result['hazards'], language);
+    final requiredPpe = resolveLocalizedList(result['required_ppe'], language);
+    final prohibited = resolveLocalizedList(result['prohibited'], language);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,10 +67,8 @@ class ResultCardView extends StatelessWidget {
             accent: Colors.red.shade800,
           ),
         ],
-        if (managerNotice != null && managerNotice.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          _ManagerNoticeBox(text: managerNotice),
-        ],
+        const SizedBox(height: 16),
+        _ManagerNoticeBox(text: language.managerNotice),
       ],
     );
   }

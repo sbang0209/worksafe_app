@@ -6,6 +6,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'language_service.dart';
+import 'result_localization.dart';
+
 /// 하나의 분석 기록. [GeminiService.analyzeObject] 결과 Map 과
 /// 사진 경로, 분석 시각을 함께 담는다.
 class HistoryEntry {
@@ -83,7 +86,7 @@ class HistoryService {
 
     await _saveAll(entries);
 
-    final name = (result['name'] as String?) ?? '알 수 없음';
+    final name = resolveLocalizedText(result['name'], AppLanguage.ko);
     debugPrint('기록 저장됨: $name, 현재 기록 수: ${entries.length}');
   }
 
@@ -105,18 +108,25 @@ class HistoryService {
     }
   }
 
-  /// 오늘(연-월-일 기준) 같은 [name] 으로 저장된 기록이 있으면 그 기록을 돌려준다.
-  /// 없으면 null.
-  Future<HistoryEntry?> findDuplicateToday(String name) async {
+  /// 오늘(연-월-일 기준) 같은 [canonicalName] 으로 저장된 기록이 있으면
+  /// 그 기록을 돌려준다. 없으면 null.
+  ///
+  /// [canonicalName] 은 화면에 표시 중인 언어가 아니라 항상 한국어(ko) 이름을
+  /// 넘겨야 한다 — 촬영 사이에 언어를 바꿔도 같은 물건인지 판단할 수 있도록,
+  /// 비교 기준을 언어와 무관하게 고정한다.
+  Future<HistoryEntry?> findDuplicateToday(String canonicalName) async {
     final entries = await getAll();
     final today = DateTime.now();
     for (final entry in entries) {
       final t = entry.timestamp;
       final sameDay =
           t.year == today.year && t.month == today.month && t.day == today.day;
-      if (sameDay && entry.result['name'] == name) {
-        return entry;
-      }
+      if (!sameDay) continue;
+      final entryName = resolveLocalizedText(
+        entry.result['name'],
+        AppLanguage.ko,
+      );
+      if (entryName == canonicalName) return entry;
     }
     return null;
   }

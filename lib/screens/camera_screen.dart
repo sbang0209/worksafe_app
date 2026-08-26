@@ -7,6 +7,7 @@ import '../gemini_service.dart';
 import '../history_service.dart';
 import '../language_service.dart';
 import '../main.dart' show cameras;
+import '../result_localization.dart';
 import '../widgets/result_card_view.dart';
 import 'history_detail_screen.dart';
 
@@ -77,10 +78,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
       // 기록 저장/중복 확인 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
       // 위 catch 의 "촬영 실패" 스낵바로 뭉뚱그려지지 않게 한다.
-      final name = (result['name'] as String?) ?? '알 수 없음';
+      // 중복 판단은 화면 언어가 아니라 한국어 이름 기준으로 한다(언어를 바꿔가며
+      // 찍어도 같은 물건으로 인식되도록).
+      final koName = resolveLocalizedText(result['name'], AppLanguage.ko);
       HistoryEntry? duplicate;
       try {
-        duplicate = await HistoryService.instance.findDuplicateToday(name);
+        duplicate = await HistoryService.instance.findDuplicateToday(koName);
       } catch (e, stack) {
         debugPrint('HistoryService 중복 확인 실패: $e');
         debugPrint('$stack');
@@ -88,7 +91,7 @@ class _CameraScreenState extends State<CameraScreen> {
       if (!mounted) return;
 
       if (duplicate != null) {
-        await _showDuplicateDialog(existing: duplicate, name: name);
+        await _showDuplicateDialog(existing: duplicate, name: result['name']);
       } else {
         try {
           await HistoryService.instance.add(
@@ -111,18 +114,24 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 오늘 같은 물건을 이미 찍은 기록이 있을 때 보여주는 안내 다이얼로그.
+  /// [name] 은 분석 결과의 원본 'name' 값(언어별 맵 또는 예전 형식의 문자열)을
+  /// 그대로 받아, 현재 화면 언어에 맞춰 여기서 뽑아 보여준다.
   Future<void> _showDuplicateDialog({
     required HistoryEntry existing,
-    required String name,
+    required dynamic name,
   }) {
     final language = LanguageService.instance.current;
+    final displayName = resolveLocalizedText(name, language);
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.background,
         title: Text(language.duplicateDialogTitle),
         content: Text(
-          language.duplicateDialogBodyTemplate.replaceFirst('{name}', name),
+          language.duplicateDialogBodyTemplate.replaceFirst(
+            '{name}',
+            displayName,
+          ),
         ),
         actions: [
           Row(
