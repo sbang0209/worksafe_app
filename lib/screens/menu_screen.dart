@@ -12,9 +12,9 @@ class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
   void _openLanguageSettings(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LanguageSettingsScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LanguageSettingsScreen()));
   }
 
   /// 사용법을 번호가 붙은 짧은 문장으로 보여준다.

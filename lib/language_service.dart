@@ -25,6 +25,8 @@ class AppLanguage {
     required this.hazardsTitle,
     required this.ppeTitle,
     required this.prohibitedTitle,
+    required this.detailsLabel,
+    required this.simpleViewLabel,
     required this.viewAllButton,
     // 탭 / 화면 제목
     required this.cameraLabel,
@@ -62,6 +64,7 @@ class AppLanguage {
     // 홈 화면
     required this.safetyMessages,
     required this.searchPlaceholder,
+    required this.searchLaunchFailedMessage,
     required this.categoryLogistics,
     required this.categoryElectrical,
     required this.categoryWoodworking,
@@ -73,6 +76,9 @@ class AppLanguage {
     required this.employeeNumberTemplate,
     required this.dangerSignageTitle,
     required this.comingSoonMessage,
+    // 표지판 팝업 음성 듣기
+    required this.listenLabel,
+    required this.ttsUnavailableMessage,
     // 스플래시 화면
     required this.appSlogan,
     // 로그인 화면
@@ -111,6 +117,12 @@ class AppLanguage {
   final String hazardsTitle;
   final String ppeTitle;
   final String prohibitedTitle;
+
+  /// 결과 화면 하단의 "자세히 보기" 토글 버튼(접힌 상태일 때 라벨).
+  final String detailsLabel;
+
+  /// 같은 토글 버튼의 펼친 상태 라벨("간단히 보기").
+  final String simpleViewLabel;
 
   /// 홈 화면의 최근 기록 미리보기에서 최근 기록 탭으로 이동하는 버튼.
   final String viewAllButton;
@@ -182,6 +194,9 @@ class AppLanguage {
   final List<String> safetyMessages;
   final String searchPlaceholder;
 
+  /// 검색어로 브라우저를 열지 못했을 때 보여주는 안내 문구.
+  final String searchLaunchFailedMessage;
+
   final String categoryLogistics;
   final String categoryElectrical;
   final String categoryWoodworking;
@@ -203,6 +218,12 @@ class AppLanguage {
 
   /// 아직 구현되지 않은 화면에 쓰는 안내 문구.
   final String comingSoonMessage;
+
+  /// 표지판 팝업의 "음성 듣기" 버튼.
+  final String listenLabel;
+
+  /// 폰이 현재 언어의 음성(TTS)을 지원하지 않을 때 보여주는 안내 문구.
+  final String ttsUnavailableMessage;
 
   /// 스플래시 화면에서 앱 이름 아래에 뜨는 슬로건. 현재 언어의 것 하나만 보여준다.
   final String appSlogan;
@@ -231,6 +252,8 @@ class AppLanguage {
     hazardsTitle: '위험 요소',
     ppeTitle: '필요 보호구',
     prohibitedTitle: '금지 행동',
+    detailsLabel: '자세히 보기',
+    simpleViewLabel: '간단히 보기',
     viewAllButton: '전체 보기',
     cameraLabel: '카메라',
     historyLabel: '최근 기록',
@@ -273,6 +296,7 @@ class AppLanguage {
       '더운 날엔 물을 자주 마시고 쉬어가세요',
     ],
     searchPlaceholder: '검색',
+    searchLaunchFailedMessage: '브라우저를 열 수 없어요',
     categoryLogistics: '물류',
     categoryElectrical: '전기',
     categoryWoodworking: '목공',
@@ -284,6 +308,8 @@ class AppLanguage {
     employeeNumberTemplate: '사원번호 {number}',
     dangerSignageTitle: '위험 표지판',
     comingSoonMessage: '준비 중입니다',
+    listenLabel: '음성 듣기',
+    ttsUnavailableMessage: '이 언어의 음성을 사용할 수 없습니다',
     appSlogan: '일 할때도 안전하게',
     loginIdLabel: '아이디',
     loginPasswordLabel: '비밀번호',
@@ -309,6 +335,8 @@ class AppLanguage {
     hazardsTitle: 'Hazards',
     ppeTitle: 'Required PPE',
     prohibitedTitle: 'Prohibited Actions',
+    detailsLabel: 'View Details',
+    simpleViewLabel: 'Simple View',
     viewAllButton: 'View All',
     cameraLabel: 'Camera',
     historyLabel: 'History',
@@ -356,6 +384,7 @@ class AppLanguage {
       'Drink water often and take breaks on hot days',
     ],
     searchPlaceholder: 'Search',
+    searchLaunchFailedMessage: "Couldn't open the browser",
     categoryLogistics: 'Logistics',
     categoryElectrical: 'Electrical',
     categoryWoodworking: 'Woodworking',
@@ -367,6 +396,8 @@ class AppLanguage {
     employeeNumberTemplate: 'Employee No. {number}',
     dangerSignageTitle: 'Danger Signage',
     comingSoonMessage: 'Coming soon',
+    listenLabel: 'Listen',
+    ttsUnavailableMessage: 'Voice for this language is not available',
     appSlogan: 'Safe at every job',
     loginIdLabel: 'ID',
     loginPasswordLabel: 'Password',
@@ -392,6 +423,8 @@ class AppLanguage {
     hazardsTitle: 'Nguy cơ',
     ppeTitle: 'Thiết bị bảo hộ cần thiết',
     prohibitedTitle: 'Hành động cấm',
+    detailsLabel: 'Xem chi tiết',
+    simpleViewLabel: 'Xem đơn giản',
     viewAllButton: 'Xem tất cả',
     cameraLabel: 'Máy ảnh',
     historyLabel: 'Lịch sử',
@@ -439,6 +472,7 @@ class AppLanguage {
       'Vào ngày nóng, hãy uống nước thường xuyên và nghỉ ngơi',
     ],
     searchPlaceholder: 'Tìm kiếm',
+    searchLaunchFailedMessage: 'Không thể mở trình duyệt',
     categoryLogistics: 'Hậu cần',
     categoryElectrical: 'Điện',
     categoryWoodworking: 'Mộc',
@@ -450,6 +484,8 @@ class AppLanguage {
     employeeNumberTemplate: 'Mã nhân viên {number}',
     dangerSignageTitle: 'Biển báo nguy hiểm',
     comingSoonMessage: 'Đang chuẩn bị',
+    listenLabel: 'Nghe',
+    ttsUnavailableMessage: 'Không có sẵn giọng đọc cho ngôn ngữ này',
     appSlogan: 'An toàn trong mọi công việc',
     loginIdLabel: 'Tên đăng nhập',
     loginPasswordLabel: 'Mật khẩu',

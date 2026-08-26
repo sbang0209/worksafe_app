@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app_colors.dart';
 import '../demo_profile.dart';
 import '../language_service.dart';
 import '../signage_data.dart';
+import '../tts_service.dart';
 import '../widgets/signage_image.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class HomeScreenState extends State<HomeScreen> {
   int _messageIndex = 0;
   Timer? _messageTimer;
   SignageCategory _selectedCategory = SignageCategory.values.first;
+  final _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -36,6 +39,8 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _messageTimer?.cancel();
+    _searchController.dispose();
+    TtsService.instance.stop();
     super.dispose();
   }
 
@@ -43,8 +48,33 @@ class HomeScreenState extends State<HomeScreen> {
     setState(() => _selectedCategory = category);
   }
 
+  /// 검색어를 그대로 구글 검색 URL 로 만들어 기본 브라우저(앱 밖)로 연다.
+  Future<void> _search(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    FocusScope.of(context).unfocus();
+
+    final url = Uri.https('www.google.com', '/search', {'q': trimmed});
+    var launched = false;
+    try {
+      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      launched = false;
+    }
+
+    if (!launched && mounted) {
+      final language = LanguageService.instance.current;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(language.searchLaunchFailedMessage)),
+      );
+    }
+  }
+
   void _openSignageDialog(Signage signage) {
     final language = LanguageService.instance.current;
+    // 다른 표지판 카드를 눌러 새 팝업을 열 때, 이전에 재생 중이던 음성을 멈춘다.
+    TtsService.instance.stop();
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -77,15 +107,40 @@ class HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          Center(
-            child: FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(language.confirmButton),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _speak(signage, language),
+                  icon: const Icon(Icons.volume_up),
+                  label: Text(language.listenLabel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(language.confirmButton),
+                ),
+              ),
+            ],
           ),
         ],
+        // 팝업이 어떤 방식으로든(확인 버튼/바깥 탭/뒤로가기) 닫히면 음성도 멈춘다.
       ),
-    );
+    ).then((_) => TtsService.instance.stop());
+  }
+
+  /// 표지판의 "이름 + 설명"을 현재 언어의 음성으로 읽는다.
+  /// 그 언어의 음성을 폰이 지원하지 않으면 안내 문구를 보여준다.
+  Future<void> _speak(Signage signage, AppLanguage language) async {
+    final text = '${signage.name(language)}. ${signage.description(language)}';
+    final started = await TtsService.instance.speak(text, language);
+    if (!started && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(language.ttsUnavailableMessage)));
+    }
   }
 
   @override
@@ -115,7 +170,11 @@ class HomeScreenState extends State<HomeScreen> {
                 collapseLabel: language.collapseLabel,
               ),
               const SizedBox(height: 20),
-              _SearchField(hintText: language.searchPlaceholder),
+              _SearchField(
+                hintText: language.searchPlaceholder,
+                controller: _searchController,
+                onSubmitted: _search,
+              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -279,10 +338,7 @@ class _ProfileNoticeCardState extends State<_ProfileNoticeCard> {
           const SizedBox(height: 14),
           Divider(color: AppColors.accentBorder, height: 1),
           const SizedBox(height: 14),
-          _ProfileRow(
-            name: widget.name,
-            employeeNumber: widget.employeeNumber,
-          ),
+          _ProfileRow(name: widget.name, employeeNumber: widget.employeeNumber),
         ],
       ),
     );
@@ -372,17 +428,30 @@ class _SafetyNotice extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.hintText});
+  const _SearchField({
+    required this.hintText,
+    required this.controller,
+    required this.onSubmitted,
+  });
 
   final String hintText;
+  final TextEditingController controller;
+
+  /// 키보드 검색 버튼이나 검색 아이콘을 눌렀을 때 호출된다.
+  final ValueChanged<String> onSubmitted;
 
   @override
   Widget build(BuildContext context) {
-    // 지금은 UI만. 실제 검색 동작은 나중에 연결한다.
     return TextField(
+      controller: controller,
+      textInputAction: TextInputAction.search,
+      onSubmitted: onSubmitted,
       decoration: InputDecoration(
         hintText: hintText,
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: () => onSubmitted(controller.text),
+        ),
         filled: true,
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(vertical: 14),

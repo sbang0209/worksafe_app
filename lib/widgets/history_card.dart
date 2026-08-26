@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../app_colors.dart';
 import '../history_service.dart';
 import '../language_service.dart';
+import '../result_localization.dart';
 
 /// 기록 하나를 사진 + 이름 + 날짜로 보여주는 카드.
 /// 최근 기록 탭 목록과 홈 화면의 미리보기에서 공통으로 쓴다.
@@ -25,7 +26,7 @@ class HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
-    final name = (entry.result['name'] as String?) ?? language.unknownLabel;
+    final name = resolveLocalizedText(entry.result['name'], language);
     final padding = compact ? 8.0 : 12.0;
     final gap = compact ? 10.0 : 14.0;
     final nameFontSize = compact ? 15.0 : 17.0;

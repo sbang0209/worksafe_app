@@ -7,6 +7,7 @@ import '../gemini_service.dart';
 import '../history_service.dart';
 import '../language_service.dart';
 import '../main.dart' show cameras;
+import '../result_localization.dart';
 import '../widgets/result_card_view.dart';
 import 'history_detail_screen.dart';
 
@@ -77,10 +78,12 @@ class _CameraScreenState extends State<CameraScreen> {
 
       // 기록 저장/중복 확인 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
       // 위 catch 의 "촬영 실패" 스낵바로 뭉뚱그려지지 않게 한다.
-      final name = (result['name'] as String?) ?? '알 수 없음';
+      // 중복 판단은 화면 언어가 아니라 한국어 이름 기준으로 한다(언어를 바꿔가며
+      // 찍어도 같은 물건으로 인식되도록).
+      final koName = resolveLocalizedText(result['name'], AppLanguage.ko);
       HistoryEntry? duplicate;
       try {
-        duplicate = await HistoryService.instance.findDuplicateToday(name);
+        duplicate = await HistoryService.instance.findDuplicateToday(koName);
       } catch (e, stack) {
         debugPrint('HistoryService 중복 확인 실패: $e');
         debugPrint('$stack');
@@ -88,7 +91,7 @@ class _CameraScreenState extends State<CameraScreen> {
       if (!mounted) return;
 
       if (duplicate != null) {
-        await _showDuplicateDialog(existing: duplicate, name: name);
+        await _showDuplicateDialog(existing: duplicate, name: result['name']);
       } else {
         try {
           await HistoryService.instance.add(
@@ -111,18 +114,24 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   /// 오늘 같은 물건을 이미 찍은 기록이 있을 때 보여주는 안내 다이얼로그.
+  /// [name] 은 분석 결과의 원본 'name' 값(언어별 맵 또는 예전 형식의 문자열)을
+  /// 그대로 받아, 현재 화면 언어에 맞춰 여기서 뽑아 보여준다.
   Future<void> _showDuplicateDialog({
     required HistoryEntry existing,
-    required String name,
+    required dynamic name,
   }) {
     final language = LanguageService.instance.current;
+    final displayName = resolveLocalizedText(name, language);
     return showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.background,
         title: Text(language.duplicateDialogTitle),
         content: Text(
-          language.duplicateDialogBodyTemplate.replaceFirst('{name}', name),
+          language.duplicateDialogBodyTemplate.replaceFirst(
+            '{name}',
+            displayName,
+          ),
         ),
         actions: [
           Row(
@@ -296,43 +305,68 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Widget _buildResultView(String path, AppLanguage language) {
-    return Container(
-      color: AppColors.background,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    // Container 에 크기를 명시해 화면 전체를 채운다 — 안 그러면 내용이 짧을 때
+    // (자세히 보기를 접었을 때 등) 배경이 내용 높이만큼만 그려지고, 그 아래
+    // Scaffold 의 검은 배경이 그대로 드러나 보인다.
+    return SizedBox.expand(
+      child: Container(
+        color: AppColors.background,
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 260,
-                  child: Image.file(File(path), fit: BoxFit.cover),
+              // 사진/결과 카드는 스크롤 영역에 두고, 버튼은 그 밖에 고정해서
+              // 내용이 길어져도 버튼이 항상 화면 하단에 그대로 보이게 한다.
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 260,
+                          child: Image.file(File(path), fit: BoxFit.cover),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildAnalysisBody(language),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildAnalysisBody(language),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _isAnalyzing ? null : _retake,
-                      icon: const Icon(Icons.refresh),
-                      label: Text(language.retakeButton),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _isAnalyzing ? null : _retake,
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(language.retakeButton),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: _isAnalyzing ? null : _goHome,
-                      icon: const Icon(Icons.home),
-                      label: Text(language.homeLabel),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _isAnalyzing ? null : _goHome,
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.home),
+                        label: Text(language.homeLabel),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
