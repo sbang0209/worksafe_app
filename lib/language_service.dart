@@ -25,6 +25,8 @@ class AppLanguage {
     required this.hazardsTitle,
     required this.ppeTitle,
     required this.prohibitedTitle,
+    required this.detailsLabel,
+    required this.simpleViewLabel,
     required this.viewAllButton,
     // 탭 / 화면 제목
     required this.cameraLabel,
@@ -115,6 +117,12 @@ class AppLanguage {
   final String hazardsTitle;
   final String ppeTitle;
   final String prohibitedTitle;
+
+  /// 결과 화면 하단의 "자세히 보기" 토글 버튼(접힌 상태일 때 라벨).
+  final String detailsLabel;
+
+  /// 같은 토글 버튼의 펼친 상태 라벨("간단히 보기").
+  final String simpleViewLabel;
 
   /// 홈 화면의 최근 기록 미리보기에서 최근 기록 탭으로 이동하는 버튼.
   final String viewAllButton;
@@ -244,6 +252,8 @@ class AppLanguage {
     hazardsTitle: '위험 요소',
     ppeTitle: '필요 보호구',
     prohibitedTitle: '금지 행동',
+    detailsLabel: '자세히 보기',
+    simpleViewLabel: '간단히 보기',
     viewAllButton: '전체 보기',
     cameraLabel: '카메라',
     historyLabel: '최근 기록',
@@ -325,6 +335,8 @@ class AppLanguage {
     hazardsTitle: 'Hazards',
     ppeTitle: 'Required PPE',
     prohibitedTitle: 'Prohibited Actions',
+    detailsLabel: 'View Details',
+    simpleViewLabel: 'Simple View',
     viewAllButton: 'View All',
     cameraLabel: 'Camera',
     historyLabel: 'History',
@@ -411,6 +423,8 @@ class AppLanguage {
     hazardsTitle: 'Nguy cơ',
     ppeTitle: 'Thiết bị bảo hộ cần thiết',
     prohibitedTitle: 'Hành động cấm',
+    detailsLabel: 'Xem chi tiết',
+    simpleViewLabel: 'Xem đơn giản',
     viewAllButton: 'Xem tất cả',
     cameraLabel: 'Máy ảnh',
     historyLabel: 'Lịch sử',

@@ -18,57 +18,189 @@ bool _isUnknown(String value) => _unknownLabels.contains(value);
 /// 언어별 맵({'ko': ..., 'en': ..., 'vi': ...})이라, 현재 선택된 언어에 맞는
 /// 값만 뽑아 보여준다 — 나중에 언어를 바꾸면 같은 기록도 그 언어로 다시 그려진다.
 /// (언어별 저장을 도입하기 전에 저장된 예전 기록은 단일 문자열이라 그대로 표시된다.)
-class ResultCardView extends StatelessWidget {
-  const ResultCardView({super.key, required this.result});
+///
+/// 기본적으로는(즉 [showDetailsToggle] 이 true 일 때) 물건 정보(이름/분류/용도)와
+/// "자세히 보기" 바만 보이고, 그 바를 누르면 위험 요소/필요 보호구/금지 행동/
+/// 관리자 확인 문구가 펼쳐진다. 펼침 상태는 이 위젯이 스스로 들고 있어서, 화면
+/// 하단 버튼(다시 찍기/홈, 목록으로 등)은 건드리지 않고 그대로 둘 수 있다.
+///
+/// [showDetailsToggle] 을 false 로 주면(기록 상세 화면) 토글 바 없이 모든 정보를
+/// 항상 펼쳐서 보여준다 — 이미 저장된 기록이라 다시 접어 둘 이유가 없기 때문이다.
+class ResultCardView extends StatefulWidget {
+  const ResultCardView({
+    super.key,
+    required this.result,
+    this.showDetailsToggle = true,
+  });
 
   final Map<String, dynamic> result;
+  final bool showDetailsToggle;
+
+  @override
+  State<ResultCardView> createState() => _ResultCardViewState();
+}
+
+class _ResultCardViewState extends State<ResultCardView> {
+  bool _expanded = false;
+
+  void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
+    final result = widget.result;
     final name = resolveLocalizedText(result['name'], language);
     final category = resolveLocalizedText(result['category'], language);
     final usage = resolveLocalizedText(result['usage'], language);
     final hazards = resolveLocalizedList(result['hazards'], language);
     final requiredPpe = resolveLocalizedList(result['required_ppe'], language);
     final prohibited = resolveLocalizedList(result['prohibited'], language);
+    final expanded = widget.showDetailsToggle ? _expanded : true;
+
+    final detailsSection = _DetailsSection(
+      hazards: hazards,
+      requiredPpe: requiredPpe,
+      prohibited: prohibited,
+      hazardsTitle: language.hazardsTitle,
+      ppeTitle: language.ppeTitle,
+      prohibitedTitle: language.prohibitedTitle,
+      managerNotice: language.managerNotice,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _InfoCard(name: name, category: category, usage: usage),
+        const SizedBox(height: 16),
+        if (widget.showDetailsToggle) ...[
+          _DetailsBar(
+            label: expanded ? language.simpleViewLabel : language.detailsLabel,
+            expanded: expanded,
+            onTap: _toggleExpanded,
+          ),
+          // 펼침/접힘을 높이 애니메이션으로 부드럽게 처리한다(홈 공지사항과 같은 방식).
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: expanded
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: detailsSection,
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ] else
+          detailsSection,
+      ],
+    );
+  }
+}
+
+/// 폭 전체를 채우는 "자세히 보기 / 간단히 보기" 바. 앱 테마의 노란색 계열
+/// 배경으로 눈에 띄게 하고, 글자와 화살표를 크게 둔다.
+class _DetailsBar extends StatelessWidget {
+  const _DetailsBar({
+    required this.label,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.banner,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.accentDark,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                color: AppColors.accentDark,
+                size: 28,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "자세히 보기" 를 펼쳤을 때 보이는 위험 요소/필요 보호구/금지 행동/관리자 문구.
+class _DetailsSection extends StatelessWidget {
+  const _DetailsSection({
+    required this.hazards,
+    required this.requiredPpe,
+    required this.prohibited,
+    required this.hazardsTitle,
+    required this.ppeTitle,
+    required this.prohibitedTitle,
+    required this.managerNotice,
+  });
+
+  final List<String> hazards;
+  final List<String> requiredPpe;
+  final List<String> prohibited;
+  final String hazardsTitle;
+  final String ppeTitle;
+  final String prohibitedTitle;
+  final String managerNotice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         if (hazards.isNotEmpty) ...[
-          const SizedBox(height: 16),
           _SafetySection(
-            title: language.hazardsTitle,
+            title: hazardsTitle,
             icon: Icons.warning_amber_rounded,
             items: hazards,
             background: Colors.orange.shade50,
             accent: Colors.orange.shade800,
           ),
+          const SizedBox(height: 16),
         ],
         if (requiredPpe.isNotEmpty) ...[
-          const SizedBox(height: 16),
           _SafetySection(
-            title: language.ppeTitle,
+            title: ppeTitle,
             icon: Icons.health_and_safety,
             items: requiredPpe,
             background: Colors.blue.shade50,
             accent: Colors.blue.shade800,
           ),
+          const SizedBox(height: 16),
         ],
         if (prohibited.isNotEmpty) ...[
-          const SizedBox(height: 16),
           _SafetySection(
-            title: language.prohibitedTitle,
+            title: prohibitedTitle,
             icon: Icons.block,
             items: prohibited,
             background: Colors.red.shade50,
             accent: Colors.red.shade800,
           ),
+          const SizedBox(height: 16),
         ],
-        const SizedBox(height: 16),
-        _ManagerNoticeBox(text: language.managerNotice),
+        _ManagerNoticeBox(text: managerNotice),
       ],
     );
   }

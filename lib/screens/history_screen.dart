@@ -15,6 +15,11 @@ class HistoryScreen extends StatefulWidget {
 class HistoryScreenState extends State<HistoryScreen> {
   List<HistoryEntry>? _entries;
 
+  /// null 이면 목록을, 아니면 이 기록의 상세를 보여준다. [Navigator.push] 대신
+  /// 상태로 전환해서, 상세를 보는 동안에도 하단 탭바(홈/카메라/최근기록/메뉴)가
+  /// 계속 보이고 다른 탭으로 바로 넘어갈 수 있다.
+  HistoryEntry? _selectedEntry;
+
   @override
   void initState() {
     super.initState();
@@ -28,12 +33,36 @@ class HistoryScreenState extends State<HistoryScreen> {
     setState(() => _entries = entries);
   }
 
+  void _openDetail(HistoryEntry entry) {
+    setState(() => _selectedEntry = entry);
+  }
+
+  void _closeDetail() {
+    setState(() => _selectedEntry = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
-    return Scaffold(
-      appBar: AppBar(title: Text(language.historyLabel), centerTitle: true),
-      body: _buildBody(language),
+    final selected = _selectedEntry;
+    // 상세를 보는 중에 기기 뒤로가기(제스처/버튼)를 누르면 앱을 벗어나지 않고
+    // 목록으로만 돌아가게 한다 — 실제로 pop 할 경로가 없기 때문이다.
+    return PopScope(
+      canPop: selected == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && selected != null) {
+          _closeDetail();
+        }
+      },
+      child: selected != null
+          ? HistoryDetailScreen(entry: selected, onBack: _closeDetail)
+          : Scaffold(
+              appBar: AppBar(
+                title: Text(language.historyLabel),
+                centerTitle: true,
+              ),
+              body: _buildBody(language),
+            ),
     );
   }
 
@@ -81,13 +110,7 @@ class HistoryScreenState extends State<HistoryScreen> {
                 ),
                 child: HistoryCard(
                   entry: entry,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => HistoryDetailScreen(entry: entry),
-                      ),
-                    );
-                  },
+                  onTap: () => _openDetail(entry),
                 ),
               );
             },

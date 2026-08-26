@@ -305,43 +305,68 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   Widget _buildResultView(String path, AppLanguage language) {
-    return Container(
-      color: AppColors.background,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    // Container 에 크기를 명시해 화면 전체를 채운다 — 안 그러면 내용이 짧을 때
+    // (자세히 보기를 접었을 때 등) 배경이 내용 높이만큼만 그려지고, 그 아래
+    // Scaffold 의 검은 배경이 그대로 드러나 보인다.
+    return SizedBox.expand(
+      child: Container(
+        color: AppColors.background,
+        child: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 260,
-                  child: Image.file(File(path), fit: BoxFit.cover),
+              // 사진/결과 카드는 스크롤 영역에 두고, 버튼은 그 밖에 고정해서
+              // 내용이 길어져도 버튼이 항상 화면 하단에 그대로 보이게 한다.
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 260,
+                          child: Image.file(File(path), fit: BoxFit.cover),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildAnalysisBody(language),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              _buildAnalysisBody(language),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _isAnalyzing ? null : _retake,
-                      icon: const Icon(Icons.refresh),
-                      label: Text(language.retakeButton),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _isAnalyzing ? null : _retake,
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(language.retakeButton),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: _isAnalyzing ? null : _goHome,
-                      icon: const Icon(Icons.home),
-                      label: Text(language.homeLabel),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _isAnalyzing ? null : _goHome,
+                        style: FilledButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.home),
+                        label: Text(language.homeLabel),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
