@@ -14,6 +14,7 @@ class AppLanguage {
     required this.managerNotice,
     // 버튼
     required this.takePhotoButton,
+    required this.quickAnalyzeButton,
     required this.retakeButton,
     required this.homeLabel,
     required this.backToListButton,
@@ -104,6 +105,9 @@ class AppLanguage {
   final String managerNotice;
 
   final String takePhotoButton;
+
+  /// 카메라 프리뷰의 "분석"(빠른 확인) 버튼. 기록에 저장하지 않는 가벼운 분석.
+  final String quickAnalyzeButton;
   final String retakeButton;
 
   /// 하단 탭 라벨과 결과 화면의 "홈" 버튼에 공통으로 쓰인다.
@@ -242,6 +246,7 @@ class AppLanguage {
     unknownLabel: '알 수 없음',
     managerNotice: '정확한 작동 방법은 반드시 현장 관리자에게 확인하세요',
     takePhotoButton: '촬영하기',
+    quickAnalyzeButton: '분석',
     retakeButton: '다시 찍기',
     homeLabel: '홈',
     backToListButton: '목록으로',
@@ -325,6 +330,7 @@ class AppLanguage {
     managerNotice:
         'Always confirm the correct operation with your on-site manager.',
     takePhotoButton: 'Take Photo',
+    quickAnalyzeButton: 'Analyze',
     retakeButton: 'Retake',
     homeLabel: 'Home',
     backToListButton: 'Back to List',
@@ -413,6 +419,7 @@ class AppLanguage {
     managerNotice:
         'Hãy luôn xác nhận cách vận hành chính xác với quản lý hiện trường.',
     takePhotoButton: 'Chụp ảnh',
+    quickAnalyzeButton: 'Phân tích',
     retakeButton: 'Chụp lại',
     homeLabel: 'Trang chủ',
     backToListButton: 'Về danh sách',

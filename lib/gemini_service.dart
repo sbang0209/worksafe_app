@@ -42,6 +42,21 @@ const String _analyzePrompt = '''
 }
 ''';
 
+/// 카메라 프리뷰의 "분석" 버튼용 가벼운 프롬프트. [analyzeObject] 와 달리
+/// 이름 + 한 줄 설명만, 현재 선택된 언어 하나로만 요청해서 빠르게 받는다.
+String _quickPrompt(AppLanguage language) =>
+    '''
+너는 한국 산업 현장의 안전 도우미다. 사진 속 물건을 보고 아래 JSON 형식으로만 답해라.
+설명 문장이나 마크다운 없이 순수 JSON 만 출력해라. 모르면 값을 '${language.unknownLabel}' 으로 채워라.
+name 은 물건 이름 한 줄, description 은 그 물건이 무엇인지 한 문장으로 설명한 것이다.
+두 값 모두 ${language.promptName} 로 작성해라.
+
+{
+  "name": "물건 이름",
+  "description": "한 줄 설명"
+}
+''';
+
 /// 사진 한 장을 Gemini REST API 에 보내고 구조화된 안전 정보를 받아오는 서비스.
 class GeminiService {
   GeminiService._();
@@ -135,6 +150,109 @@ class GeminiService {
   Future<String> identifyObject(File image) async {
     final result = await analyzeObject(image);
     return resolveLocalizedText(result['name'], AppLanguage.ko);
+  }
+
+  /// 카메라 프리뷰의 "분석" 버튼용 가벼운 분석. [analyzeObject] 와 달리
+  /// 이름 + 한 줄 설명만 요청해서 빠르게 받고, 기록에 저장하지 않는다.
+  /// 현재 선택된 언어로만 결과를 받는다 — 화면에 바로 보여주고 버리는
+  /// 일회성 결과라 3개 언어를 다 받아 둘 필요가 없다.
+  ///
+  /// 예외를 던지지 않고, 실패 시에도 항상 같은 형태의 Map(name, description
+  /// 키를 가진 일반 문자열)을 반환한다.
+  Future<Map<String, String>> quickIdentify(File image) async {
+    final language = await LanguageService.instance.getLanguage();
+
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      debugPrint('GeminiService: .env 에 GEMINI_API_KEY 가 없습니다');
+      return _quickFallback(language.errorNoApiKey, language);
+    }
+
+    try {
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      final body = jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': _quickPrompt(language)},
+              {
+                'inline_data': {
+                  'mime_type': _mimeTypeOf(image.path),
+                  'data': base64Image,
+                },
+              },
+            ],
+          },
+        ],
+        'generationConfig': {
+          'temperature': 0.2,
+          'response_mime_type': 'application/json',
+        },
+      });
+
+      final response = await _postWithRetry(body, apiKey);
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          'GeminiService(quick) 응답 오류 statusCode: ${response.statusCode}',
+        );
+        debugPrint('GeminiService(quick) 응답 body: ${response.body}');
+        final busy =
+            response.statusCode == 503 ||
+            response.statusCode == 429 ||
+            response.statusCode == 500;
+        return _quickFallback(
+          busy
+              ? language.errorServerBusy
+              : language.errorStatusCodeTemplate.replaceFirst(
+                  '{code}',
+                  '${response.statusCode}',
+                ),
+          language,
+        );
+      }
+
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      final text = _extractText(decoded);
+
+      if (text == null || text.trim().isEmpty) {
+        debugPrint(
+          'GeminiService(quick): 텍스트를 찾지 못했습니다. body=${response.body}',
+        );
+        return _quickFallback(language.errorGeneric, language);
+      }
+
+      return _parseQuickResult(text, language);
+    } catch (e, stack) {
+      debugPrint('GeminiService.quickIdentify 실패: $e');
+      debugPrint('$stack');
+      return _quickFallback(language.errorNetworkOrApi, language);
+    }
+  }
+
+  Map<String, String> _parseQuickResult(String text, AppLanguage language) {
+    final cleaned = _stripCodeFence(text);
+    try {
+      final decoded = jsonDecode(cleaned);
+      if (decoded is! Map) {
+        debugPrint('GeminiService(quick): JSON 이 객체가 아닙니다. 원본 텍스트:\n$text');
+        return _quickFallback(language.errorGeneric, language);
+      }
+      return {
+        'name': _pickText(decoded['name'], language),
+        'description': _pickText(decoded['description'], language),
+      };
+    } catch (e) {
+      debugPrint('GeminiService(quick): JSON 파싱 실패: $e');
+      debugPrint('GeminiService(quick): 원본 텍스트:\n$text');
+      return _quickFallback(language.errorGeneric, language);
+    }
+  }
+
+  Map<String, String> _quickFallback(String name, AppLanguage language) {
+    return {'name': name, 'description': language.unknownLabel};
   }
 
   /// 503(서버 과부하) 등 일시적 오류면 지수 백오프로 재시도한다.

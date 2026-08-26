@@ -29,6 +29,13 @@ class _CameraScreenState extends State<CameraScreen> {
   /// Gemini 호출 중 여부
   bool _isAnalyzing = false;
 
+  /// "분석" 버튼의 가벼운 결과. name/description 키를 가진 일반 문자열 Map.
+  /// 기록에 저장하지 않는 일회성 결과라 [_result] 와는 별도로 관리한다.
+  Map<String, String>? _quickResult;
+
+  /// "분석" 버튼 호출 중 여부.
+  bool _isQuickAnalyzing = false;
+
   @override
   void initState() {
     super.initState();
@@ -113,6 +120,50 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
+  /// "분석" 버튼: 현재 프레임을 캡처해 이름 + 한 줄 설명만 빠르게 받아 화면
+  /// 상단에 보여준다. 화면 전환도, 기록 저장도 하지 않는다.
+  Future<void> _quickAnalyze() async {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (controller.value.isTakingPicture) return;
+    if (_isAnalyzing || _isQuickAnalyzing) return;
+
+    XFile? file;
+    try {
+      file = await controller.takePicture();
+      if (!mounted) return;
+      setState(() {
+        _isQuickAnalyzing = true;
+        _quickResult = null;
+      });
+
+      final result = await GeminiService.instance.quickIdentify(
+        File(file.path),
+      );
+      if (!mounted) return;
+      setState(() {
+        _quickResult = result;
+        _isQuickAnalyzing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isQuickAnalyzing = false);
+      final language = LanguageService.instance.current;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${language.captureFailedPrefix}$e')),
+      );
+    } finally {
+      // 기록에 남기지 않는 임시 캡처라, 다 쓰고 나면 파일을 지운다.
+      if (file != null) {
+        try {
+          await File(file.path).delete();
+        } catch (_) {
+          // 삭제 실패는 무시한다 — 임시 파일이라 치명적이지 않다.
+        }
+      }
+    }
+  }
+
   /// 오늘 같은 물건을 이미 찍은 기록이 있을 때 보여주는 안내 다이얼로그.
   /// [name] 은 분석 결과의 원본 'name' 값(언어별 맵 또는 예전 형식의 문자열)을
   /// 그대로 받아, 현재 화면 언어에 맞춰 여기서 뽑아 보여준다.
@@ -167,6 +218,8 @@ class _CameraScreenState extends State<CameraScreen> {
     _capturedPath = null;
     _result = null;
     _isAnalyzing = false;
+    _quickResult = null;
+    _isQuickAnalyzing = false;
   });
 
   @override
@@ -240,36 +293,49 @@ class _CameraScreenState extends State<CameraScreen> {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Row(
+              child: Column(
                 children: [
-                  // 카메라를 닫고 원래 보던 탭 화면으로 돌아간다.
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back),
-                    color: Colors.white,
-                    iconSize: 28,
-                    tooltip: language.homeLabel,
-                  ),
-                  // 뒤로가기 버튼과 같은 폭을 오른쪽에도 비워둬야 안내 문구가
-                  // 버튼에 밀리지 않고 화면 한가운데에 놓인다.
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
-                        language.cameraOverlayHint,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w600,
-                          shadows: [
-                            Shadow(blurRadius: 4, color: Colors.black54),
-                          ],
+                  Row(
+                    children: [
+                      // 카메라를 닫고 원래 보던 탭 화면으로 돌아간다.
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back),
+                        color: Colors.white,
+                        iconSize: 28,
+                        tooltip: language.homeLabel,
+                      ),
+                      // 뒤로가기 버튼과 같은 폭을 오른쪽에도 비워둬야 안내 문구가
+                      // 버튼에 밀리지 않고 화면 한가운데에 놓인다.
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            language.cameraOverlayHint,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(blurRadius: 4, color: Colors.black54),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 48),
+                    ],
                   ),
-                  const SizedBox(width: 48),
+                  if (_isQuickAnalyzing || _quickResult != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: _QuickResultBanner(
+                        loading: _isQuickAnalyzing,
+                        result: _quickResult,
+                        analyzingText: language.analyzingText,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -281,22 +347,34 @@ class _CameraScreenState extends State<CameraScreen> {
           right: false,
           child: Padding(
             padding: const EdgeInsets.only(bottom: 40),
-            child: GestureDetector(
-              onTap: _takePicture,
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  border: Border.all(color: Colors.white, width: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _QuickAnalyzeButton(
+                  label: language.quickAnalyzeButton,
+                  loading: _isQuickAnalyzing,
+                  onTap: _isAnalyzing ? null : _quickAnalyze,
                 ),
-                child: const Icon(
-                  Icons.camera_alt,
-                  size: 32,
-                  color: Colors.black,
+                const SizedBox(width: 32),
+                GestureDetector(
+                  onTap: _isQuickAnalyzing ? null : _takePicture,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: Colors.white, width: 4),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 32,
+                      color: Colors.black,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -405,6 +483,114 @@ class _CameraScreenState extends State<CameraScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Text(language.captureCompleteText, textAlign: TextAlign.center),
+    );
+  }
+}
+
+/// 카메라 프리뷰 상단에 뜨는 "분석" 결과 배너. 분석 중이면 로딩을,
+/// 끝나면 "이름 — 설명" 한 줄을 보여준다.
+class _QuickResultBanner extends StatelessWidget {
+  const _QuickResultBanner({
+    required this.loading,
+    required this.result,
+    required this.analyzingText,
+  });
+
+  final bool loading;
+  final Map<String, String>? result;
+  final String analyzingText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: loading
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  analyzingText,
+                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                ),
+              ],
+            )
+          : Text(
+              '${result?['name']} — ${result?['description']}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+    );
+  }
+}
+
+/// "분석"(빠른 확인) 버튼. 촬영 버튼보다 작고 옅게 그려서 보조 동작임을
+/// 나타낸다.
+class _QuickAnalyzeButton extends StatelessWidget {
+  const _QuickAnalyzeButton({
+    required this.label,
+    required this.loading,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool loading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.25),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: loading
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.search, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
