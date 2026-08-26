@@ -74,6 +74,9 @@ class AppLanguage {
     required this.employeeNumberTemplate,
     required this.dangerSignageTitle,
     required this.comingSoonMessage,
+    // 표지판 팝업 음성 듣기
+    required this.listenLabel,
+    required this.ttsUnavailableMessage,
     // 스플래시 화면
     required this.appSlogan,
     // 로그인 화면
@@ -208,6 +211,12 @@ class AppLanguage {
   /// 아직 구현되지 않은 화면에 쓰는 안내 문구.
   final String comingSoonMessage;
 
+  /// 표지판 팝업의 "음성 듣기" 버튼.
+  final String listenLabel;
+
+  /// 폰이 현재 언어의 음성(TTS)을 지원하지 않을 때 보여주는 안내 문구.
+  final String ttsUnavailableMessage;
+
   /// 스플래시 화면에서 앱 이름 아래에 뜨는 슬로건. 현재 언어의 것 하나만 보여준다.
   final String appSlogan;
 
@@ -289,6 +298,8 @@ class AppLanguage {
     employeeNumberTemplate: '사원번호 {number}',
     dangerSignageTitle: '위험 표지판',
     comingSoonMessage: '준비 중입니다',
+    listenLabel: '음성 듣기',
+    ttsUnavailableMessage: '이 언어의 음성을 사용할 수 없습니다',
     appSlogan: '일 할때도 안전하게',
     loginIdLabel: '아이디',
     loginPasswordLabel: '비밀번호',
@@ -373,6 +384,8 @@ class AppLanguage {
     employeeNumberTemplate: 'Employee No. {number}',
     dangerSignageTitle: 'Danger Signage',
     comingSoonMessage: 'Coming soon',
+    listenLabel: 'Listen',
+    ttsUnavailableMessage: 'Voice for this language is not available',
     appSlogan: 'Safe at every job',
     loginIdLabel: 'ID',
     loginPasswordLabel: 'Password',
@@ -457,6 +470,8 @@ class AppLanguage {
     employeeNumberTemplate: 'Mã nhân viên {number}',
     dangerSignageTitle: 'Biển báo nguy hiểm',
     comingSoonMessage: 'Đang chuẩn bị',
+    listenLabel: 'Nghe',
+    ttsUnavailableMessage: 'Không có sẵn giọng đọc cho ngôn ngữ này',
     appSlogan: 'An toàn trong mọi công việc',
     loginIdLabel: 'Tên đăng nhập',
     loginPasswordLabel: 'Mật khẩu',

@@ -7,6 +7,7 @@ import '../app_colors.dart';
 import '../demo_profile.dart';
 import '../language_service.dart';
 import '../signage_data.dart';
+import '../tts_service.dart';
 import '../widgets/signage_image.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,6 +40,7 @@ class HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _messageTimer?.cancel();
     _searchController.dispose();
+    TtsService.instance.stop();
     super.dispose();
   }
 
@@ -71,6 +73,8 @@ class HomeScreenState extends State<HomeScreen> {
 
   void _openSignageDialog(Signage signage) {
     final language = LanguageService.instance.current;
+    // 다른 표지판 카드를 눌러 새 팝업을 열 때, 이전에 재생 중이던 음성을 멈춘다.
+    TtsService.instance.stop();
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -103,15 +107,40 @@ class HomeScreenState extends State<HomeScreen> {
           ],
         ),
         actions: [
-          Center(
-            child: FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(language.confirmButton),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _speak(signage, language),
+                  icon: const Icon(Icons.volume_up),
+                  label: Text(language.listenLabel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(language.confirmButton),
+                ),
+              ),
+            ],
           ),
         ],
+        // 팝업이 어떤 방식으로든(확인 버튼/바깥 탭/뒤로가기) 닫히면 음성도 멈춘다.
       ),
-    );
+    ).then((_) => TtsService.instance.stop());
+  }
+
+  /// 표지판의 "이름 + 설명"을 현재 언어의 음성으로 읽는다.
+  /// 그 언어의 음성을 폰이 지원하지 않으면 안내 문구를 보여준다.
+  Future<void> _speak(Signage signage, AppLanguage language) async {
+    final text = '${signage.name(language)}. ${signage.description(language)}';
+    final started = await TtsService.instance.speak(text, language);
+    if (!started && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(language.ttsUnavailableMessage)));
+    }
   }
 
   @override

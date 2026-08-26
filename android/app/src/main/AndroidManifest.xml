@@ -49,5 +49,9 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
         </intent>
+        <!-- flutter_tts 가 기기의 TTS 엔진을 찾는 데 필요 (Android 11+ 패키지 가시성). -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 </manifest>
