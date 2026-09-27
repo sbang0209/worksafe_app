@@ -17,9 +17,12 @@ class TtsService {
     'ko': 'ko-KR',
     'en': 'en-US',
     'vi': 'vi-VN',
+    'km': 'km-KH',
+    'ne': 'ne-NP',
+    'th': 'th-TH',
   };
 
-  /// [language] 에 해당하는 로케일(ko-KR/en-US/vi-VN)로 [text] 를 읽는다.
+  /// [language] 에 해당하는 로케일(ko-KR/en-US/vi-VN 등)로 [text] 를 읽는다.
   ///
   /// 폰이 그 언어의 음성을 지원하지 않으면 아무 것도 읽지 않고 false 를
   /// 돌려준다 — 호출한 쪽에서 안내 문구를 보여주면 된다. 정상적으로 재생을

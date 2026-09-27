@@ -1,580 +1,405 @@
-import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../app_colors.dart';
 import '../demo_profile.dart';
+import '../history_service.dart';
 import '../language_service.dart';
-import '../signage_data.dart';
-import '../tts_service.dart';
-import '../widgets/signage_image.dart';
+import '../notice_data.dart';
+import '../result_localization.dart';
+import '../risk_level.dart';
+import '../widgets/common.dart';
+import '../widgets/language_sheet.dart';
+import '../widgets/notice_card.dart';
+import 'history_detail_screen.dart';
+import 'notice_list_screen.dart';
+import 'search_screen.dart';
 
+/// 홈 탭. 인사말, 검색, 안전 공지, 최근 분석 미리보기.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.onViewAllHistory});
+
+  /// 최근 분석의 "전체 보기". 기록 탭으로 넘어간다.
+  final VoidCallback onViewAllHistory;
 
   @override
   State<HomeScreen> createState() => HomeScreenState();
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  static const _rotationInterval = Duration(seconds: 8);
+  /// 최근 분석에 보여줄 최대 개수 (2열 x 2줄).
+  static const _recentCount = 4;
 
-  int _messageIndex = 0;
-  Timer? _messageTimer;
-  SignageCategory _selectedCategory = SignageCategory.values.first;
-  final _searchController = TextEditingController();
+  List<HistoryEntry>? _recent;
 
   @override
   void initState() {
     super.initState();
-    _messageTimer = Timer.periodic(_rotationInterval, (_) {
-      final language = LanguageService.instance.current;
-      setState(() {
-        _messageIndex = (_messageIndex + 1) % language.safetyMessages.length;
-      });
-    });
+    reload();
   }
 
-  @override
-  void dispose() {
-    _messageTimer?.cancel();
-    _searchController.dispose();
-    TtsService.instance.stop();
-    super.dispose();
+  /// 최근 분석을 다시 불러온다. 홈 탭으로 돌아오거나 촬영을 마쳤을 때
+  /// [MainTabScreen] 이 호출한다.
+  Future<void> reload() async {
+    final entries = await HistoryService.instance.getAll();
+    if (!mounted) return;
+    setState(() => _recent = entries.take(_recentCount).toList());
   }
 
-  void _selectCategory(SignageCategory category) {
-    setState(() => _selectedCategory = category);
+  void _openNotices() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const NoticeListScreen()));
   }
 
-  /// 검색어를 그대로 구글 검색 URL 로 만들어 기본 브라우저(앱 밖)로 연다.
-  Future<void> _search(String query) async {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty) return;
-
-    FocusScope.of(context).unfocus();
-
-    final url = Uri.https('www.google.com', '/search', {'q': trimmed});
-    var launched = false;
-    try {
-      launched = await launchUrl(url, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      launched = false;
-    }
-
-    if (!launched && mounted) {
-      final language = LanguageService.instance.current;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(language.searchLaunchFailedMessage)),
-      );
-    }
-  }
-
-  void _openSignageDialog(Signage signage) {
-    final language = LanguageService.instance.current;
-    // 다른 표지판 카드를 눌러 새 팝업을 열 때, 이전에 재생 중이던 음성을 멈춘다.
-    TtsService.instance.stop();
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: 180,
-              child: SignageImage(
-                icon: signage.icon,
-                color: signage.color,
-                assetPath: signage.imageAsset,
-                iconSize: 56,
-                borderRadius: 16,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              signage.name(language),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              signage.description(language),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15, height: 1.4),
-            ),
-          ],
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _speak(signage, language),
-                  icon: const Icon(Icons.volume_up),
-                  label: Text(language.listenLabel),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: FilledButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(language.confirmButton),
-                ),
-              ),
-            ],
-          ),
-        ],
-        // 팝업이 어떤 방식으로든(확인 버튼/바깥 탭/뒤로가기) 닫히면 음성도 멈춘다.
-      ),
-    ).then((_) => TtsService.instance.stop());
-  }
-
-  /// 표지판의 "이름 + 설명"을 현재 언어의 음성으로 읽는다.
-  /// 그 언어의 음성을 폰이 지원하지 않으면 안내 문구를 보여준다.
-  Future<void> _speak(Signage signage, AppLanguage language) async {
-    final text = '${signage.name(language)}. ${signage.description(language)}';
-    final started = await TtsService.instance.speak(text, language);
-    if (!started && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(language.ttsUnavailableMessage)));
-    }
+  void _openSearch() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const SearchScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
-    final messages = language.safetyMessages;
-    final messageIndex = _messageIndex % messages.length;
-    final signageItems = signageForCategory(_selectedCategory);
+    final notices = safetyNotices();
+    final recent = _recent;
 
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _ProfileNoticeCard(
-                name: DemoProfile.name,
-                employeeNumber: language.employeeNumberTemplate.replaceAll(
-                  '{number}',
-                  DemoProfile.employeeNumber,
-                ),
-                noticeTitle: language.noticeTitle,
-                message: messages[messageIndex],
-                messageIndex: messageIndex,
-                expandLabel: language.expandLabel,
-                collapseLabel: language.collapseLabel,
-              ),
-              const SizedBox(height: 20),
-              _SearchField(
-                hintText: language.searchPlaceholder,
-                controller: _searchController,
-                onSubmitted: _search,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  for (final category in SignageCategory.values)
-                    Expanded(
-                      child: _CategoryButton(
-                        name: categoryName(category, language),
-                        icon: categoryIcon(category),
-                        selected: category == _selectedCategory,
-                        onTap: () => _selectCategory(category),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 28),
-              _SectionTitle(language.dangerSignageTitle),
-              const SizedBox(height: 12),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: GridView.builder(
-                  key: ValueKey(_selectedCategory),
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.3,
-                  ),
-                  itemCount: signageItems.length,
-                  itemBuilder: (context, index) {
-                    final signage = signageItems[index];
-                    return _SignageCard(
-                      signage: signage,
-                      name: signage.name(language),
-                      onTap: () => _openSignageDialog(signage),
-                    );
-                  },
-                ),
-              ),
-            ],
+        bottom: false,
+        child: ListView(
+          // 하단 바가 떠 있어 내용이 그 뒤로 이어지므로, 끝에 바 높이만큼 여백을 둔다.
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            MediaQuery.paddingOf(context).bottom + 24,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 홈 화면의 섹션 제목(공지사항 / 위험 표지판)에 공통으로 쓰는 스타일.
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-    );
-  }
-}
-
-/// 홈 화면 맨 위 카드. 위쪽 공지사항은 접었다 펼 수 있고, 아래쪽 프로필은 항상 보인다.
-class _ProfileNoticeCard extends StatefulWidget {
-  const _ProfileNoticeCard({
-    required this.name,
-    required this.employeeNumber,
-    required this.noticeTitle,
-    required this.message,
-    required this.messageIndex,
-    required this.expandLabel,
-    required this.collapseLabel,
-  });
-
-  final String name;
-  final String employeeNumber;
-  final String noticeTitle;
-
-  /// 지금 보여줄 안전 멘트와 그 인덱스(문구가 바뀔 때 페이드 전환용 키).
-  final String message;
-  final int messageIndex;
-
-  final String expandLabel;
-  final String collapseLabel;
-
-  @override
-  State<_ProfileNoticeCard> createState() => _ProfileNoticeCardState();
-}
-
-class _ProfileNoticeCardState extends State<_ProfileNoticeCard> {
-  /// 공지사항을 펼친 상태인지. 처음에는 펼쳐둔다.
-  bool _expanded = true;
-
-  void _toggle() => setState(() => _expanded = !_expanded);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 제목 줄 전체를 눌러도 토글되게 해서 화살표만 겨냥하지 않아도 되게 한다.
-          InkWell(
-            onTap: _toggle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                children: [
-                  Icon(Icons.campaign, color: AppColors.accentDark, size: 22),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      widget.noticeTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Tooltip(
-                    message: _expanded
-                        ? widget.collapseLabel
-                        : widget.expandLabel,
-                    child: Icon(
-                      _expanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      color: AppColors.accentDark,
-                    ),
-                  ),
-                ],
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _LanguageButton(
+                  label: language.label,
+                  onTap: () => showLanguageSheet(context),
+                ),
+                const SizedBox(width: 8),
+                _BellButton(
+                  tooltip: language.notificationsLabel,
+                  onTap: _openNotices,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              language.greetingTemplate.replaceAll('{name}', DemoProfile.name),
+              style: const TextStyle(
+                fontSize: 28,
+                height: 1.3,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
-          // 펼침/접힘을 높이 애니메이션으로 부드럽게 처리한다.
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            alignment: Alignment.topCenter,
-            child: _expanded
-                ? _SafetyNotice(
-                    message: widget.message,
-                    index: widget.messageIndex,
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-          const SizedBox(height: 14),
-          Divider(color: AppColors.accentBorder, height: 1),
-          const SizedBox(height: 14),
-          _ProfileRow(name: widget.name, employeeNumber: widget.employeeNumber),
-        ],
-      ),
-    );
-  }
-}
-
-/// 카드 아래쪽의 프로필 줄. 표시값은 [DemoProfile] 고정값이다.
-class _ProfileRow extends StatelessWidget {
-  const _ProfileRow({required this.name, required this.employeeNumber});
-
-  final String name;
-
-  /// 이미 언어별 문구로 조립된 사원번호 줄 (예: '사원번호 12345').
-  final String employeeNumber;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // 프로필 사진이 아직 없어서 기본 사람 아이콘을 원형 배경 위에 얹는다.
-        CircleAvatar(
-          radius: 26,
-          backgroundColor: AppColors.accentLight,
-          child: Icon(Icons.person, size: 30, color: AppColors.accentDark),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                employeeNumber,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-              ),
+            const SizedBox(height: 20),
+            _SearchBox(hint: language.searchPlaceholder, onTap: _openSearch),
+            const SizedBox(height: 28),
+            SectionHeader(
+              title: language.safetyNoticeTitle,
+              actionLabel: language.viewAllButton,
+              onAction: _openNotices,
+            ),
+            const SizedBox(height: 12),
+            for (final notice in notices) ...[
+              NoticeCard(notice: notice),
+              const SizedBox(height: 12),
             ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 카드 안에서 펼쳤을 때 보이는 안전 멘트.
-///
-/// 흰 카드 안에 또 상자를 만들면 "카드 속 카드"로 보여서, 배경도 테두리도 없이
-/// 글자만 가운데 정렬로 둔다.
-class _SafetyNotice extends StatelessWidget {
-  const _SafetyNotice({required this.message, required this.index});
-
-  final String message;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 400),
-        child: Text(
-          message,
-          key: ValueKey(index),
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            height: 1.5,
-            color: AppColors.accentDark,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.hintText,
-    required this.controller,
-    required this.onSubmitted,
-  });
-
-  final String hintText;
-  final TextEditingController controller;
-
-  /// 키보드 검색 버튼이나 검색 아이콘을 눌렀을 때 호출된다.
-  final ValueChanged<String> onSubmitted;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      textInputAction: TextInputAction.search,
-      onSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        hintText: hintText,
-        prefixIcon: IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () => onSubmitted(controller.text),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+            const SizedBox(height: 20),
+            SectionHeader(
+              title: language.recentAnalysisTitle,
+              actionLabel: language.viewAllButton,
+              onAction: widget.onViewAllHistory,
+            ),
+            const SizedBox(height: 12),
+            if (recent == null)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (recent.isEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Text(
+                  language.noHistoryMessage,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: 1.25,
+                ),
+                itemCount: recent.length,
+                itemBuilder: (context, index) {
+                  final entry = recent[index];
+                  return _RecentCard(
+                    entry: entry,
+                    language: language,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => HistoryDetailScreen(entry: entry),
+                      ),
+                    ),
+                  );
+                },
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CategoryButton extends StatelessWidget {
-  const _CategoryButton({
-    required this.name,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
+/// 오른쪽 위 테두리 알약 버튼 (🌐 한국어). 누르면 언어 선택 시트.
+class _LanguageButton extends StatelessWidget {
+  const _LanguageButton({required this.label, required this.onTap});
 
-  final String name;
-  final IconData icon;
-  final bool selected;
+  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: selected ? AppColors.accent : Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+    const shape = StadiumBorder(
+      side: BorderSide(color: AppColors.borderStrong),
+    );
+    return Material(
+      color: AppColors.surface,
+      shape: shape,
+      child: InkWell(
+        customBorder: shape,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.language,
+                size: 20,
+                color: AppColors.textPrimary,
               ),
-              child: Icon(
-                icon,
-                color: selected ? Colors.white : AppColors.accent,
-                size: 26,
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              name,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                color: selected ? AppColors.accentDark : Colors.black87,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _SignageCard extends StatelessWidget {
-  const _SignageCard({
-    required this.signage,
-    required this.name,
-    required this.onTap,
-  });
+/// 새 공지가 있다는 틸색 점이 달린 종 버튼.
+class _BellButton extends StatelessWidget {
+  const _BellButton({required this.tooltip, required this.onTap});
 
-  final Signage signage;
-  final String name;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onTap,
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(
+            Icons.notifications_none,
+            size: 28,
+            color: AppColors.textPrimary,
+          ),
+          Positioned(
+            top: 1,
+            right: 1,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: AppColors.brand,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 누르면 검색 화면으로 넘어가는 검색창 모양 버튼.
+class _SearchBox extends StatelessWidget {
+  const _SearchBox({required this.hint, required this.onTap});
+
+  final String hint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      elevation: 1.5,
-      shadowColor: AppColors.cardShadow,
+      color: AppColors.fieldBg,
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(22),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          child: Row(
             children: [
+              const Icon(Icons.search, color: AppColors.textSecondary),
+              const SizedBox(width: 12),
               Expanded(
-                child: SignageImage(
-                  icon: signage.icon,
-                  color: signage.color,
-                  assetPath: signage.imageAsset,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                name,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                child: Text(
+                  hint,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textFaint,
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 최근 분석 카드. 사진 위에 위험도 배지(오른쪽 위)와 이름·시각(왼쪽 아래)을 얹는다.
+class _RecentCard extends StatelessWidget {
+  const _RecentCard({
+    required this.entry,
+    required this.language,
+    required this.onTap,
+  });
+
+  final HistoryEntry entry;
+  final AppLanguage language;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final risk = RiskSummary.of(entry.result);
+    final day =
+        relativeDayLabel(entry.timestamp, language) ?? entry.formattedDate;
+    return Material(
+      color: AppColors.thumbBg,
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.file(
+              File(entry.imagePath),
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stack) => const Icon(
+                Icons.photo_camera_outlined,
+                size: 40,
+                color: AppColors.textFaint,
+              ),
+            ),
+            if (risk != null)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: _WhitePill(
+                  child: Text(
+                    '${risk.level.label(language)} ${risk.count}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: risk.level.color,
+                    ),
+                  ),
+                ),
+              ),
+            Positioned(
+              left: 10,
+              right: 10,
+              bottom: 10,
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: _WhitePill(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        resolveLocalizedText(entry.result['name'], language),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '$day ${entry.formattedTime}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WhitePill extends StatelessWidget {
+  const _WhitePill({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: child,
     );
   }
 }

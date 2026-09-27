@@ -6,89 +6,120 @@ import '../app_colors.dart';
 import '../history_service.dart';
 import '../language_service.dart';
 import '../result_localization.dart';
+import '../risk_level.dart';
 
-/// 기록 하나를 사진 + 이름 + 날짜로 보여주는 카드.
-/// 최근 기록 탭 목록과 홈 화면의 미리보기에서 공통으로 쓴다.
+/// 최근 기록 목록의 한 줄. 사진 썸네일 + 이름 + 위험도 배지·시각 + 화살표.
 class HistoryCard extends StatelessWidget {
-  const HistoryCard({
-    super.key,
-    required this.entry,
-    required this.onTap,
-    this.compact = false,
-  });
+  const HistoryCard({super.key, required this.entry, required this.onTap});
 
   final HistoryEntry entry;
   final VoidCallback onTap;
-
-  /// true 면 홈 화면 미리보기용으로 더 작게 그린다.
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
     final name = resolveLocalizedText(entry.result['name'], language);
-    final padding = compact ? 8.0 : 12.0;
-    final gap = compact ? 10.0 : 14.0;
-    final nameFontSize = compact ? 15.0 : 17.0;
-    final dateFontSize = compact ? 13.0 : 15.0;
+    final risk = RiskSummary.of(entry.result);
 
-    return Material(
-      color: Colors.white,
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      elevation: 2,
-      shadowColor: AppColors.cardShadow,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.all(padding),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AspectRatio(
-                aspectRatio: 1,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(entry.imagePath),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stack) => Container(
-                      color: Colors.grey.shade300,
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          children: [
+            _Thumbnail(path: entry.imagePath),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      name,
-                      maxLines: compact ? 1 : 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: nameFontSize,
-                        fontWeight: FontWeight.w700,
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      if (risk != null) ...[
+                        _RiskBadge(risk: risk, language: language),
+                        const SizedBox(width: 7),
+                      ],
+                      Text(
+                        entry.formattedTime,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textMuted,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: compact ? 3 : 6),
-                    Text(
-                      entry.formattedTimestamp,
-                      style: TextStyle(
-                        fontSize: dateFontSize,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textFaint),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Thumbnail extends StatelessWidget {
+  const _Thumbnail({required this.path});
+
+  final String path;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        width: 64,
+        height: 64,
+        child: Image.file(
+          File(path),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stack) => Container(
+            color: AppColors.thumbBg,
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.photo_camera_outlined,
+              color: AppColors.textMuted,
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RiskBadge extends StatelessWidget {
+  const _RiskBadge({required this.risk, required this.language});
+
+  final RiskSummary risk;
+  final AppLanguage language;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: risk.level.background,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '${risk.level.label(language)} ${risk.count}',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: risk.level.color,
         ),
       ),
     );

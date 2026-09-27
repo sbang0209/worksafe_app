@@ -1,6 +1,8 @@
 import 'dart:io';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../app_colors.dart';
 import '../gemini_service.dart';
@@ -8,7 +10,9 @@ import '../history_service.dart';
 import '../language_service.dart';
 import '../main.dart' show cameras;
 import '../result_localization.dart';
-import '../widgets/result_card_view.dart';
+import '../widgets/analysis_result_page.dart';
+import '../widgets/common.dart';
+import '../widgets/language_sheet.dart';
 import 'history_detail_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -21,6 +25,10 @@ class CameraScreen extends StatefulWidget {
 class _CameraScreenState extends State<CameraScreen> {
   CameraController? _controller;
   Future<void>? _initFuture;
+
+  /// [cameras] 안에서 지금 쓰는 카메라의 위치. 카메라 전환 버튼이 바꾼다.
+  int _cameraIndex = 0;
+
   String? _capturedPath;
 
   /// Gemini 가 돌려준 분석 결과 Map (null 이면 아직 결과 없음)
@@ -29,27 +37,21 @@ class _CameraScreenState extends State<CameraScreen> {
   /// Gemini 호출 중 여부
   bool _isAnalyzing = false;
 
-  /// "분석" 버튼의 가벼운 결과. name/description 키를 가진 일반 문자열 Map.
-  /// 기록에 저장하지 않는 일회성 결과라 [_result] 와는 별도로 관리한다.
-  Map<String, String>? _quickResult;
-
-  /// "분석" 버튼 호출 중 여부.
-  bool _isQuickAnalyzing = false;
-
   @override
   void initState() {
     super.initState();
-    _initCamera();
+    // 처음에는 후면 카메라로 연다.
+    final back = cameras.indexWhere(
+      (c) => c.lensDirection == CameraLensDirection.back,
+    );
+    _initCamera(back == -1 ? 0 : back);
   }
 
-  void _initCamera() {
+  void _initCamera(int index) {
     if (cameras.isEmpty) return;
-    final back = cameras.firstWhere(
-      (c) => c.lensDirection == CameraLensDirection.back,
-      orElse: () => cameras.first,
-    );
+    _cameraIndex = index;
     _controller = CameraController(
-      back,
+      cameras[index],
       ResolutionPreset.high,
       enableAudio: false,
     );
@@ -62,106 +64,89 @@ class _CameraScreenState extends State<CameraScreen> {
     super.dispose();
   }
 
+  /// 다음 카메라(전면 ↔ 후면)로 바꾼다. 카메라가 하나뿐이면 아무 일도 하지 않는다.
+  Future<void> _switchCamera() async {
+    if (cameras.length < 2) return;
+    final old = _controller;
+    setState(() => _initCamera((_cameraIndex + 1) % cameras.length));
+    await old?.dispose();
+  }
+
   Future<void> _takePicture() async {
     final controller = _controller;
     if (controller == null || !controller.value.isInitialized) return;
-    if (controller.value.isTakingPicture) return;
+    if (controller.value.isTakingPicture || _isAnalyzing) return;
     try {
       final file = await controller.takePicture();
-      if (!mounted) return;
-      setState(() {
-        _capturedPath = file.path;
-        _result = null;
-        _isAnalyzing = true;
-      });
-
-      final imageFile = File(file.path);
-      final result = await GeminiService.instance.analyzeObject(imageFile);
-      if (!mounted) return;
-      setState(() {
-        _result = result;
-        _isAnalyzing = false;
-      });
-
-      // 기록 저장/중복 확인 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
-      // 위 catch 의 "촬영 실패" 스낵바로 뭉뚱그려지지 않게 한다.
-      // 중복 판단은 화면 언어가 아니라 한국어 이름 기준으로 한다(언어를 바꿔가며
-      // 찍어도 같은 물건으로 인식되도록).
-      final koName = resolveLocalizedText(result['name'], AppLanguage.ko);
-      HistoryEntry? duplicate;
-      try {
-        duplicate = await HistoryService.instance.findDuplicateToday(koName);
-      } catch (e, stack) {
-        debugPrint('HistoryService 중복 확인 실패: $e');
-        debugPrint('$stack');
-      }
-      if (!mounted) return;
-
-      if (duplicate != null) {
-        await _showDuplicateDialog(existing: duplicate, name: result['name']);
-      } else {
-        try {
-          await HistoryService.instance.add(
-            result: result,
-            imageFile: imageFile,
-          );
-        } catch (e, stack) {
-          debugPrint('HistoryService 저장 실패: $e');
-          debugPrint('$stack');
-        }
-      }
+      await _analyze(file.path);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _isAnalyzing = false);
-      final language = LanguageService.instance.current;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${language.captureFailedPrefix}$e')),
-      );
+      _showFailure(e);
     }
   }
 
-  /// "분석" 버튼: 현재 프레임을 캡처해 이름 + 한 줄 설명만 빠르게 받아 화면
-  /// 상단에 보여준다. 화면 전환도, 기록 저장도 하지 않는다.
-  Future<void> _quickAnalyze() async {
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) return;
-    if (controller.value.isTakingPicture) return;
-    if (_isAnalyzing || _isQuickAnalyzing) return;
-
-    XFile? file;
+  /// 갤러리에서 고른 사진을 촬영한 사진과 똑같이 분석한다.
+  Future<void> _pickFromGallery() async {
+    if (_isAnalyzing) return;
     try {
-      file = await controller.takePicture();
-      if (!mounted) return;
-      setState(() {
-        _isQuickAnalyzing = true;
-        _quickResult = null;
-      });
-
-      final result = await GeminiService.instance.quickIdentify(
-        File(file.path),
-      );
-      if (!mounted) return;
-      setState(() {
-        _quickResult = result;
-        _isQuickAnalyzing = false;
-      });
+      final file = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (file == null) return;
+      await _analyze(file.path);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _isQuickAnalyzing = false);
-      final language = LanguageService.instance.current;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${language.captureFailedPrefix}$e')),
-      );
-    } finally {
-      // 기록에 남기지 않는 임시 캡처라, 다 쓰고 나면 파일을 지운다.
-      if (file != null) {
-        try {
-          await File(file.path).delete();
-        } catch (_) {
-          // 삭제 실패는 무시한다 — 임시 파일이라 치명적이지 않다.
-        }
+      _showFailure(e);
+    }
+  }
+
+  /// 사진을 Gemini 로 분석하고, 오늘 같은 물건 기록이 없으면 기록에 저장한다.
+  Future<void> _analyze(String path) async {
+    if (!mounted) return;
+    setState(() {
+      _capturedPath = path;
+      _result = null;
+      _isAnalyzing = true;
+    });
+
+    final imageFile = File(path);
+    final result = await GeminiService.instance.analyzeObject(imageFile);
+    if (!mounted) return;
+    setState(() {
+      _result = result;
+      _isAnalyzing = false;
+    });
+
+    // 기록 저장/중복 확인 실패는 촬영/분석 자체의 실패가 아니므로 별도로 처리하고,
+    // "촬영 실패" 스낵바로 뭉뚱그려지지 않게 한다.
+    // 중복 판단은 화면 언어가 아니라 한국어 이름 기준으로 한다(언어를 바꿔가며
+    // 찍어도 같은 물건으로 인식되도록).
+    final koName = resolveLocalizedText(result['name'], AppLanguage.ko);
+    HistoryEntry? duplicate;
+    try {
+      duplicate = await HistoryService.instance.findDuplicateToday(koName);
+    } catch (e, stack) {
+      debugPrint('HistoryService 중복 확인 실패: $e');
+      debugPrint('$stack');
+    }
+    if (!mounted) return;
+
+    if (duplicate != null) {
+      await _showDuplicateDialog(existing: duplicate, name: result['name']);
+    } else {
+      try {
+        await HistoryService.instance.add(result: result, imageFile: imageFile);
+      } catch (e, stack) {
+        debugPrint('HistoryService 저장 실패: $e');
+        debugPrint('$stack');
       }
     }
+  }
+
+  void _showFailure(Object error) {
+    if (!mounted) return;
+    // 결과 없이 로딩 화면에 멈춰 있지 않도록 촬영 화면으로 되돌린다.
+    _retake();
+    final language = LanguageService.instance.current;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${language.captureFailedPrefix}$error')),
+    );
   }
 
   /// 오늘 같은 물건을 이미 찍은 기록이 있을 때 보여주는 안내 다이얼로그.
@@ -218,73 +203,53 @@ class _CameraScreenState extends State<CameraScreen> {
     _capturedPath = null;
     _result = null;
     _isAnalyzing = false;
-    _quickResult = null;
-    _isQuickAnalyzing = false;
   });
 
   @override
   Widget build(BuildContext context) {
-    final language = LanguageService.instance.current;
-    return Scaffold(backgroundColor: Colors.black, body: _buildBody(language));
-  }
-
-  Widget _buildBody(AppLanguage language) {
-    if (cameras.isEmpty || _controller == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            language.noCameraMessage,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70),
-          ),
-        ),
-      );
-    }
-    if (_capturedPath != null) {
-      return _buildResultView(_capturedPath!, language);
-    }
-    return FutureBuilder<void>(
-      future: _initFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                language.cameraInitErrorTemplate.replaceFirst(
-                  '{error}',
-                  '${snapshot.error}',
-                ),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ),
+    // 이 화면은 탭 화면 밖에 push 되므로, 언어 버튼으로 언어를 바꾸면 여기서
+    // 직접 다시 그린다.
+    return ListenableBuilder(
+      listenable: LanguageService.instance,
+      builder: (context, _) {
+        final language = LanguageService.instance.current;
+        final path = _capturedPath;
+        if (path != null) {
+          // 분석 중에는 result 가 null 이라 사진과 로딩 표시만 보인다.
+          // 왼쪽 위 뒤로가기는 카메라를 닫지 않고 다시 찍기 화면으로 돌아간다.
+          return AnalysisResultPage(
+            imagePath: path,
+            result: _isAnalyzing ? null : _result,
+            onBack: _retake,
+            backTooltip: language.retakeButton,
           );
         }
-        return _buildPreviewView(language);
+        return Scaffold(
+          backgroundColor: AppColors.cameraBg,
+          body: Column(
+            children: [
+              Expanded(child: _buildViewfinder(language)),
+              _ControlBar(
+                galleryLabel: language.galleryLabel,
+                switchLabel: language.switchCameraLabel,
+                shutterLabel: language.cameraLabel,
+                onGallery: _pickFromGallery,
+                onShutter: _takePicture,
+                onSwitch: cameras.length < 2 ? null : _switchCamera,
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
-  Widget _buildPreviewView(AppLanguage language) {
+  /// 미리보기 + 위쪽 버튼 줄 + 아래쪽 안내 알약.
+  Widget _buildViewfinder(AppLanguage language) {
     return Stack(
-      alignment: Alignment.bottomCenter,
+      fit: StackFit.expand,
       children: [
-        SizedBox.expand(child: CameraPreview(_controller!)),
-        Center(
-          child: Container(
-            width: 240,
-            height: 240,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white70, width: 2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
+        _buildPreview(language),
         Positioned(
           top: 0,
           left: 0,
@@ -292,158 +257,140 @@ class _CameraScreenState extends State<CameraScreen> {
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              // 제목은 양쪽 버튼 폭과 상관없이 화면 정중앙에 오도록 버튼 줄 위에 겹친다.
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
+                  Text(
+                    language.cameraLabel,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
                   Row(
                     children: [
                       // 카메라를 닫고 원래 보던 탭 화면으로 돌아간다.
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.arrow_back),
-                        color: Colors.white,
+                      RoundIconButton(
+                        icon: Icons.chevron_left,
                         iconSize: 28,
                         tooltip: language.homeLabel,
+                        background: Colors.black.withValues(alpha: 0.45),
+                        foreground: Colors.white,
+                        onTap: () => Navigator.of(context).pop(),
                       ),
-                      // 뒤로가기 버튼과 같은 폭을 오른쪽에도 비워둬야 안내 문구가
-                      // 버튼에 밀리지 않고 화면 한가운데에 놓인다.
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          child: Text(
-                            language.cameraOverlayHint,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w600,
-                              shadows: [
-                                Shadow(blurRadius: 4, color: Colors.black54),
-                              ],
-                            ),
-                          ),
-                        ),
+                      const Spacer(),
+                      _DarkLanguagePill(
+                        code: language.code.toUpperCase(),
+                        onTap: () => showLanguageSheet(context),
                       ),
-                      const SizedBox(width: 48),
                     ],
                   ),
-                  if (_isQuickAnalyzing || _quickResult != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: _QuickResultBanner(
-                        loading: _isQuickAnalyzing,
-                        result: _quickResult,
-                        analyzingText: language.analyzingText,
-                      ),
-                    ),
                 ],
               ),
             ),
           ),
         ),
-        SafeArea(
-          top: false,
-          left: false,
-          right: false,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 40),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _QuickAnalyzeButton(
-                  label: language.quickAnalyzeButton,
-                  loading: _isQuickAnalyzing,
-                  onTap: _isAnalyzing ? null : _quickAnalyze,
-                ),
-                const SizedBox(width: 32),
-                GestureDetector(
-                  onTap: _isQuickAnalyzing ? null : _takePicture,
-                  child: Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      border: Border.all(color: Colors.white, width: 4),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 32,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        Positioned(
+          left: 24,
+          right: 24,
+          bottom: 24,
+          child: Center(child: _HintPill(text: language.cameraOverlayHint)),
         ),
       ],
     );
   }
 
-  Widget _buildResultView(String path, AppLanguage language) {
-    // Container 에 크기를 명시해 화면 전체를 채운다 — 안 그러면 내용이 짧을 때
-    // (자세히 보기를 접었을 때 등) 배경이 내용 높이만큼만 그려지고, 그 아래
-    // Scaffold 의 검은 배경이 그대로 드러나 보인다.
-    return SizedBox.expand(
-      child: Container(
-        color: AppColors.background,
-        child: SafeArea(
-          child: Column(
+  Widget _buildPreview(AppLanguage language) {
+    final controller = _controller;
+    if (cameras.isEmpty || controller == null) {
+      return _CenterMessage(language.noCameraMessage);
+    }
+    return FutureBuilder<void>(
+      future: _initFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        }
+        if (snapshot.hasError) {
+          return _CenterMessage(
+            language.cameraInitErrorTemplate.replaceFirst(
+              '{error}',
+              '${snapshot.error}',
+            ),
+          );
+        }
+        final size = controller.value.previewSize;
+        if (size == null) return CameraPreview(controller);
+        // 미리보기를 비율을 유지한 채 화면 영역에 꽉 채운다(가장자리는 잘린다).
+        // previewSize 는 가로 기준이라 세로 화면에서는 너비·높이를 바꿔 쓴다.
+        return ClipRect(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: size.height,
+              height: size.width,
+              child: CameraPreview(controller),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CenterMessage extends StatelessWidget {
+  const _CenterMessage(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white70),
+        ),
+      ),
+    );
+  }
+}
+
+/// 카메라 화면 오른쪽 위의 어두운 언어 버튼 (🌐 KO).
+class _DarkLanguagePill extends StatelessWidget {
+  const _DarkLanguagePill({required this.code, required this.onTap});
+
+  final String code;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.45),
+      shape: const StadiumBorder(),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // 사진/결과 카드는 스크롤 영역에 두고, 버튼은 그 밖에 고정해서
-              // 내용이 길어져도 버튼이 항상 화면 하단에 그대로 보이게 한다.
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 260,
-                          child: Image.file(File(path), fit: BoxFit.cover),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildAnalysisBody(language),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _isAnalyzing ? null : _retake,
-                        style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        icon: const Icon(Icons.refresh),
-                        label: Text(language.retakeButton),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: _isAnalyzing ? null : _goHome,
-                        style: FilledButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        icon: const Icon(Icons.home),
-                        label: Text(language.homeLabel),
-                      ),
-                    ),
-                  ],
+              const Icon(Icons.language, size: 18, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(
+                code,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -452,144 +399,127 @@ class _CameraScreenState extends State<CameraScreen> {
       ),
     );
   }
-
-  void _goHome() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
-  /// 분석 중이면 로딩 인디케이터를, 결과가 오면 카드 UI(ResultCardView)를 보여준다.
-  Widget _buildAnalysisBody(AppLanguage language) {
-    if (_isAnalyzing) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 12),
-            Text(language.analyzingText, style: const TextStyle(fontSize: 16)),
-          ],
-        ),
-      );
-    }
-    final result = _result;
-    if (result != null) {
-      return ResultCardView(result: result);
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
-      child: Text(language.captureCompleteText, textAlign: TextAlign.center),
-    );
-  }
 }
 
-/// 카메라 프리뷰 상단에 뜨는 "분석" 결과 배너. 분석 중이면 로딩을,
-/// 끝나면 "이름 — 설명" 한 줄을 보여준다.
-class _QuickResultBanner extends StatelessWidget {
-  const _QuickResultBanner({
-    required this.loading,
-    required this.result,
-    required this.analyzingText,
-  });
+/// 미리보기 아래쪽의 "궁금한 물건을 화면에 담고 촬영하세요" 안내 알약.
+class _HintPill extends StatelessWidget {
+  const _HintPill({required this.text});
 
-  final bool loading;
-  final Map<String, String>? result;
-  final String analyzingText;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: loading
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  analyzingText,
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
-                ),
-              ],
-            )
-          : Text(
-              '${result?['name']} — ${result?['description']}',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.radio_button_checked,
+            size: 18,
+            color: AppColors.brand,
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Colors.white,
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
             ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// "분석"(빠른 확인) 버튼. 촬영 버튼보다 작고 옅게 그려서 보조 동작임을
-/// 나타낸다.
-class _QuickAnalyzeButton extends StatelessWidget {
-  const _QuickAnalyzeButton({
-    required this.label,
-    required this.loading,
-    required this.onTap,
+/// 화면 맨 아래 어두운 버튼 줄: 갤러리 · 셔터 · 카메라 전환.
+class _ControlBar extends StatelessWidget {
+  const _ControlBar({
+    required this.galleryLabel,
+    required this.switchLabel,
+    required this.shutterLabel,
+    required this.onGallery,
+    required this.onShutter,
+    required this.onSwitch,
   });
 
-  final String label;
-  final bool loading;
-  final VoidCallback? onTap;
+  final String galleryLabel;
+  final String switchLabel;
+  final String shutterLabel;
+  final VoidCallback onGallery;
+  final VoidCallback onShutter;
+
+  /// null 이면(카메라가 하나뿐) 전환 버튼을 흐리게 비활성화한다.
+  final VoidCallback? onSwitch;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.25),
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: loading
-                ? const Padding(
-                    padding: EdgeInsets.all(14),
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+    final onSwitch = this.onSwitch;
+    return Container(
+      color: const Color(0xFF151515),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 28),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              RoundIconButton(
+                icon: Icons.photo_outlined,
+                tooltip: galleryLabel,
+                size: 54,
+                iconSize: 26,
+                circle: false,
+                background: AppColors.cameraControlBg,
+                foreground: Colors.white,
+                onTap: onGallery,
+              ),
+              Tooltip(
+                message: shutterLabel,
+                child: GestureDetector(
+                  onTap: onShutter,
+                  child: Container(
+                    width: 86,
+                    height: 86,
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.shutter, width: 4),
                     ),
-                  )
-                : const Icon(Icons.search, color: Colors.white, size: 26),
+                    child: const DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppColors.shutter,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Opacity(
+                opacity: onSwitch == null ? 0.4 : 1,
+                child: RoundIconButton(
+                  icon: Icons.cached,
+                  tooltip: switchLabel,
+                  size: 54,
+                  iconSize: 26,
+                  circle: false,
+                  background: AppColors.cameraControlBg,
+                  foreground: Colors.white,
+                  onTap: onSwitch,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -1,35 +1,106 @@
 import 'package:flutter/material.dart';
 
-/// 앱 전체가 공유하는 색 팔레트. 홈 화면 디자인(노란색 계열)을 기준으로 삼는다.
+/// WorkSafe 디자인 시스템 색 팔레트
 ///
-/// 카메라 화면, 최근 기록, 메뉴, 결과 카드, 다이얼로그 등은 모두 이 상수를 통해
-/// 색을 참조한다 — 새 화면을 만들 때도 색을 직접 고르지 말고 여기서 가져다 쓴다.
+/// 화이트 배경 + 세이프티 틸(브랜드) + 뉴트럴 그레이 + 의미 색(위험/주의/필수).
+/// 색상은 홈·표지판·분석 결과 등 리디자인 시안에서 실제 사용한 값과 일치합니다.
+/// 새 화면을 만들 때도 색을 직접 고르지 말고 여기서 가져다 쓴다.
 ///
-/// 예외: 분석 결과의 위험 요소(빨강/주황)·필요 보호구(파랑)·금지 행동(빨강) 강조색과
-/// 표지판 카테고리별 색은 안전상 의미가 있는 색이라 이 팔레트를 따르지 않고
-/// (result_card_view.dart, signage_data.dart) 그대로 유지한다.
-class AppColors {
-  AppColors._();
+/// 사용 예:
+///   Container(color: AppColors.brand)
+///   Text('위험', style: TextStyle(color: AppColors.danger))
+abstract final class AppColors {
+  // ── 브랜드 (세이프티 틸) ────────────────────────────────
+  /// 메인 브랜드 색 · 하단 카메라 FAB, 주요 버튼, 활성 상태
+  static const Color brand = Color(0xFF0E8A80);
+  static const Color brandDark = Color(0xFF0B6F67); // 눌림/hover
+  static const Color brandTintBg = Color(0xFFE4F5F1); // 아이콘 칩 배경
+  static const Color brandOnDark = Color(0xFFBFEAE4); // 틸 위 보조 텍스트
 
-  /// ThemeData.colorScheme 이 파생되는 시드 컬러.
-  static const seed = Colors.amber;
+  // ── 배경 / 표면 ────────────────────────────────────────
+  static const Color background = Color(0xFFFFFFFF); // 화면 기본 배경(흰색)
+  static const Color surface = Color(0xFFFFFFFF); // 카드 표면
+  static const Color surfaceMuted = Color(0xFFF7F7F7); // 옅은 내부 박스
+  static const Color fieldBg = Color(0xFFF1F1F1); // 검색바·비활성 칩
+  static const Color thumbBg = Color(0xFFE7E7E7); // 썸네일 플레이스홀더
 
-  /// 화면 배경(옅은 아이보리/노랑). ThemeData.scaffoldBackgroundColor 로 전역 적용된다.
-  static const background = Color(0xFFFFFBEA);
+  // ── 보더 ───────────────────────────────────────────────
+  static const Color border = Color(0xFFEBEBEB); // 카드 테두리(기본)
+  static const Color borderStrong = Color(0xFFE6E6E6);
+  static const Color divider = Color(0xFFECECEC); // 리스트 구분선
 
-  /// 강조색 — 선택된 상태, 아이콘, 버튼 텍스트 등.
-  static final accent = Colors.amber.shade800;
-  static final accentDark = Colors.amber.shade900;
-  static final accentLight = Colors.amber.shade100;
-  static final accentBorder = Colors.amber.shade200;
-  static final accentSoft = Colors.amber.shade50;
+  // ── 텍스트 (뉴트럴) ────────────────────────────────────
+  static const Color textPrimary = Color(0xFF1C1B19); // 본문/제목
+  static const Color textSecondary = Color(0xFF8B8B8B); // 보조 텍스트
+  static const Color textMuted = Color(0xFF9A9A9A); // 타임스탬프 등
+  static const Color textFaint = Color(0xFFABABAB); // 섹션 라벨
 
-  /// 안내 배너(홈 화면 안전 멘트) 배경.
-  static final banner = Colors.amber.shade300;
+  // ── 의미 색: 위험도 / 표지판 등급 ──────────────────────
+  /// 위험(금지·경고 최상위)
+  static const Color danger = Color(0xFFE23B2E);
+  static const Color dangerBg = Color(0xFFFBEEEA);
 
-  /// 선택되지 않은 상태(하단 탭 등)에 쓰는 중립색.
-  static final neutral = Colors.grey.shade500;
+  /// 주의(경고)
+  static const Color warning = Color(0xFFB5730A);
+  static const Color warningIcon = Color(0xFFE9932B);
+  static const Color warningBg = Color(0xFFFBF3E6);
 
-  /// 카드에 쓰는 은은한 그림자.
-  static final cardShadow = Colors.black.withValues(alpha: 0.08);
+  /// 필수(지시)
+  static const Color mandatory = Color(0xFF2F6FD0);
+  static const Color mandatoryBg = Color(0xFFEAF1FB);
+
+  /// 공지 강조(폭염·긴급)
+  static const Color alert = Color(0xFFE2542E);
+  static const Color alertBg = Color(0xFFFDECEA);
+
+  // ── 실제 표지판 도형 색 (KOSHA 규격 근사) ──────────────
+  static const Color signWarnFill = Color(0xFFF5C21A); // 노란 경고 삼각형
+  static const Color signWarnStroke = Color(0xFF1C1B19);
+  static const Color signMandatoryFill = Color(0xFF1E63C8); // 파란 지시 원
+  static const Color signProhibitRing = Color(0xFFD42B1E); // 빨간 금지 원/사선
+
+  // ── 다크 표면 (카메라 화면) ────────────────────────────
+  static const Color cameraBg = Color(0xFF1A1A1A);
+  static const Color cameraControlBg = Color(0xFF2A2A2A);
+  static const Color shutter = Color(0xFFFFFFFF);
+}
+
+/// 라이트 테마에 팔레트를 연결한다. main.dart 의 MaterialApp.theme 으로 쓴다.
+ThemeData buildWorkSafeTheme() {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: AppColors.brand,
+    primary: AppColors.brand,
+    surface: AppColors.surface,
+    error: AppColors.danger,
+    brightness: Brightness.light,
+  );
+
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: AppColors.background,
+    dividerColor: AppColors.divider,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.background,
+      surfaceTintColor: Colors.transparent,
+      foregroundColor: AppColors.textPrimary,
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.brand,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        minimumSize: const Size.fromHeight(56),
+        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      ),
+    ),
+    cardTheme: CardThemeData(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        side: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+    ),
+  );
 }

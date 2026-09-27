@@ -19,28 +19,46 @@ const int _maxRetries = 4;
 const int _firstRetryDelaySeconds = 2;
 
 /// 분석 프롬프트. 나중에 언어를 바꿔도 기존 기록이 그 언어로 보이게 하려고,
-/// 한 번의 호출로 6항목 모두 ko(한국어)/en(영어)/vi(베트남어) 3개 언어를 동시에
-/// 받는다. 지시문 자체는 한국어로 두고, 최상위 키와 언어 키(ko/en/vi)는
-/// 항상 영어 그대로 유지한다.
-const String _analyzePrompt = '''
+/// 한 번의 호출로 6항목 모두 [AppLanguage.all] 의 모든 언어를 동시에 받는다.
+/// 지시문 자체는 한국어로 두고, 최상위 키와 언어 키(ko/en/...)는 항상 영어
+/// 그대로 유지한다. 언어를 추가하면 이 프롬프트도 자동으로 따라간다.
+String _buildAnalyzePrompt() {
+  final languages = AppLanguage.all;
+  final codes = languages.map((l) => l.code).join('/');
+  final languageList = languages
+      .map((l) => '${l.code}(${l.promptName})')
+      .join(', ');
+  final unknowns = languages
+      .map((l) => "${l.code}: '${l.unknownLabel}'")
+      .join(', ');
+  String textExample(String example) =>
+      '{${languages.map((l) => '"${l.code}": "$example"').join(', ')}}';
+  String listExample(String example) =>
+      '{${languages.map((l) => '"${l.code}": ["$example"]').join(', ')}}';
+
+  return '''
 너는 한국 산업 현장의 안전 도우미다. 사진 속 물건을 보고 아래 JSON 형식으로만 답해라.
 설명 문장이나 마크다운 없이 순수 JSON 만 출력해라.
 기계 조작법이나 작동 순서는 절대 생성하지 마라. 위험요소와 금지행동 위주로만 답해라.
 
-각 항목의 값은 ko(한국어) / en(영어) / vi(베트남어) 3개 언어로 모두 채워라.
-모르면 각 언어에 맞는 "모름" 표현을 써라 (ko: '알 수 없음', en: 'Unknown', vi: 'Không rõ').
+각 항목의 값은 $languageList 언어로 모두 채워라.
+모르면 각 언어에 맞는 "모름" 표현을 써라 ($unknowns).
 최상위 키(name, category, usage, hazards, required_ppe, prohibited)와
-언어 키(ko/en/vi)는 항상 영어 그대로 두고, 그 안의 문자열/리스트 값만 해당 언어로 작성해라.
+언어 키($codes)는 항상 영어 그대로 두고, 그 안의 문자열/리스트 값만 해당 언어로 작성해라.
+hazards, required_ppe, prohibited 는 모든 언어에서 항목 수와 순서를 같게 맞춰라.
 
 {
-  "name": {"ko": "물건 이름 (한 줄)", "en": "item name", "vi": "tên vật"},
-  "category": {"ko": "분류 (예: 목공 절단 기계, 사무기기 등)", "en": "category", "vi": "phân loại"},
-  "usage": {"ko": "이 물건을 현장에서 어떤 작업에 쓰는지 한 문장", "en": "usage sentence", "vi": "câu mô tả cách dùng"},
-  "hazards": {"ko": ["위험요소1", "위험요소2"], "en": ["hazard1", "hazard2"], "vi": ["nguy cơ 1", "nguy cơ 2"]},
-  "required_ppe": {"ko": ["필요한 보호구1"], "en": ["required ppe 1"], "vi": ["thiết bị bảo hộ 1"]},
-  "prohibited": {"ko": ["하지 말아야 할 행동1"], "en": ["prohibited action 1"], "vi": ["hành động cấm 1"]}
+  "name": ${textExample('물건 이름 (한 줄)')},
+  "category": ${textExample('분류 (예: 목공 절단 기계, 사무기기 등)')},
+  "usage": ${textExample('이 물건을 현장에서 어떤 작업에 쓰는지 한 문장')},
+  "hazards": ${listExample('위험요소')},
+  "required_ppe": ${listExample('필요한 보호구')},
+  "prohibited": ${listExample('하지 말아야 할 행동')}
 }
 ''';
+}
+
+final String _analyzePrompt = _buildAnalyzePrompt();
 
 /// 카메라 프리뷰의 "분석" 버튼용 가벼운 프롬프트. [analyzeObject] 와 달리
 /// 이름 + 한 줄 설명만, 현재 선택된 언어 하나로만 요청해서 빠르게 받는다.
@@ -71,13 +89,13 @@ class GeminiService {
   /// 예외를 던지지 않고, 실패 시에도 항상 같은 형태의 Map 을 반환한다.
   ///
   /// 반환 키: name, category, usage, hazards, required_ppe, prohibited.
-  /// 각 값은 `{'ko': ..., 'en': ..., 'vi': ...}` 형태로 3개 언어를 모두 담는다
+  /// 각 값은 `{'ko': ..., 'en': ..., ...}` 형태로 [AppLanguage.all] 의 언어를 모두 담는다
   /// (name/category/usage 는 String 맵, hazards/required_ppe/prohibited 는
   /// `List<String>` 맵). 나중에 언어를 바꿔도 이 기록을 그 언어로 보여줄 수 있다.
   ///
   /// manager_notice 는 더 이상 이 Map 에 포함하지 않는다 — AI 생성이 아니라
   /// 항상 코드에서 고정으로 붙이는 문구라, 표시 시점에 현재 언어로 바로 그려준다
-  /// ([ResultCardView] 참고).
+  /// ([AnalysisResultPage] 참고).
   Future<Map<String, dynamic>> analyzeObject(File image) async {
     final apiKey = dotenv.env['GEMINI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {

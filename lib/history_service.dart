@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'demo_history.dart';
 import 'language_service.dart';
 import 'result_localization.dart';
 
@@ -38,12 +40,15 @@ class HistoryEntry {
     timestamp: DateTime.parse(json['timestamp'] as String),
   );
 
-  /// "2026-08-20 14:05" 형태로 사람이 읽기 좋게 표시한다.
-  String get formattedTimestamp {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${timestamp.year}-${two(timestamp.month)}-${two(timestamp.day)} '
-        '${two(timestamp.hour)}:${two(timestamp.minute)}';
-  }
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
+  /// "2026-08-20" 형태의 날짜. 최근 기록에서 오늘/어제가 아닌 날의 묶음 제목.
+  String get formattedDate =>
+      '${timestamp.year}-${_two(timestamp.month)}-${_two(timestamp.day)}';
+
+  /// "14:05" 형태의 시각. 최근 기록 목록의 각 항목에 표시한다.
+  String get formattedTime =>
+      '${_two(timestamp.hour)}:${_two(timestamp.minute)}';
 }
 
 /// 분석 기록을 폰에 저장/조회/삭제하는 서비스.
@@ -58,6 +63,10 @@ class HistoryService {
   static final HistoryService instance = HistoryService._();
 
   static const _prefsKey = 'history_entries';
+
+  /// 목업 기록을 바꾸면 버전을 올려서, 이미 설치된 앱에도 다시 넣게 한다.
+  static const _demoSeededKey = 'demo_history_seeded_v2';
+  static const _demoIdPrefix = 'demo-';
   static const _maxEntries = 20;
 
   /// 기록을 추가한다. [imageFile] 은 앱 문서 디렉토리로 복사되어 보관된다.
@@ -88,6 +97,39 @@ class HistoryService {
 
     final name = resolveLocalizedText(result['name'], AppLanguage.ko);
     debugPrint('기록 저장됨: $name, 현재 기록 수: ${entries.length}');
+  }
+
+  /// 앱을 처음 실행했을 때 한 번만 시연용 목업 기록([demoHistoryEntries])을
+  /// 넣는다. 목업 사진 에셋은 실제 촬영 사진처럼 기록 사진 폴더로 복사한다.
+  /// 이전 버전의 목업 기록은 지우고 다시 넣으며, 사용자가 찍은 기록과 섞어
+  /// 최신순으로 저장한다. 이후에는(기록을 전부 지워도) 다시 넣지 않는다.
+  Future<void> seedDemoIfNeeded() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(_demoSeededKey) ?? false) return;
+
+    final kept = <HistoryEntry>[];
+    for (final entry in await getAll()) {
+      if (entry.id.startsWith(_demoIdPrefix)) {
+        await _deleteImageFile(entry.imagePath);
+      } else {
+        kept.add(entry);
+      }
+    }
+
+    final dir = await _historyDir();
+    final demo = <HistoryEntry>[];
+    for (final json in demoHistoryEntries(DateTime.now())) {
+      final asset = json['asset'] as String;
+      final bytes = await rootBundle.load(asset);
+      final file = File(p.join(dir.path, '${json['id']}${p.extension(asset)}'));
+      await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+      demo.add(HistoryEntry.fromJson({...json, 'imagePath': file.path}));
+    }
+
+    final entries = [...kept, ...demo]
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    await _saveAll(entries.take(_maxEntries).toList());
+    await prefs.setBool(_demoSeededKey, true);
   }
 
   /// 저장된 모든 기록을 최신순으로 돌려준다.
@@ -156,12 +198,18 @@ class HistoryService {
     await prefs.setString(_prefsKey, raw);
   }
 
-  Future<String> _copyImage(File imageFile) async {
+  /// 기록 사진을 보관하는 폴더. 없으면 만든다.
+  Future<Directory> _historyDir() async {
     final dir = await getApplicationDocumentsDirectory();
     final historyDir = Directory(p.join(dir.path, 'history_images'));
     if (!await historyDir.exists()) {
       await historyDir.create(recursive: true);
     }
+    return historyDir;
+  }
+
+  Future<String> _copyImage(File imageFile) async {
+    final historyDir = await _historyDir();
     final fileName =
         '${DateTime.now().microsecondsSinceEpoch}${p.extension(imageFile.path)}';
     final savedPath = p.join(historyDir.path, fileName);

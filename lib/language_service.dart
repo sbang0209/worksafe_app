@@ -1,41 +1,46 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 분석 결과(6항목 + manager_notice) 및 앱 UI 문구를 표시할 언어.
+/// 분석 결과(6항목) 및 앱 UI 문구를 표시할 언어.
 ///
 /// 정식 i18n 패키지 없이, 화면에 노출되는 고정 문구를 언어별 필드로 직접 들고 있다.
-/// 새 문구가 필요하면 이 클래스에 필드를 추가하고 ko/en/vi 세 값을 모두 채운다.
+/// 새 문구가 필요하면 이 클래스에 필드를 추가하고 모든 언어 값을 채운다.
 class AppLanguage {
   const AppLanguage._({
     required this.code,
     required this.label,
+    required this.englishName,
+    required this.flag,
     required this.promptName,
     required this.unknownLabel,
     required this.managerNotice,
-    // 버튼
-    required this.takePhotoButton,
-    required this.quickAnalyzeButton,
+    // 공통 버튼
     required this.retakeButton,
     required this.homeLabel,
-    required this.backToListButton,
     required this.viewRecordButton,
     required this.confirmButton,
     required this.cancelButton,
     required this.deleteButton,
-    // 결과 카드 섹션 제목
+    required this.closeLabel,
+    required this.shareLabel,
+    // 분석 결과
     required this.hazardsTitle,
     required this.ppeTitle,
     required this.prohibitedTitle,
-    required this.detailsLabel,
-    required this.simpleViewLabel,
-    required this.viewAllButton,
-    // 탭 / 화면 제목
+    required this.analysisResultTitle,
+    required this.askManagerButton,
+    // 하단 탭
     required this.cameraLabel,
+    required this.signageLabel,
+    required this.historyTabLabel,
     required this.historyLabel,
     required this.menuLabel,
-    required this.historyDetailTitle,
+    // 언어 선택
     required this.languageSettingsLabel,
-    required this.languageSectionHeader,
+    required this.languagePickerTitle,
+    required this.languagePickerSubtitle,
+    required this.languageNames,
+    // 메뉴
     required this.howToUseLabel,
     required this.howToUseSteps,
     required this.appInfoLabel,
@@ -43,57 +48,86 @@ class AppLanguage {
     required this.clearHistoryLabel,
     required this.clearHistoryConfirmMessage,
     required this.historyClearedMessage,
-    required this.logoutLabel,
-    required this.logoutConfirmMessage,
+    required this.appSettingsSection,
+    required this.dataAccountSection,
+    required this.employeeNumberTemplate,
     // 다이얼로그
     required this.duplicateDialogTitle,
     required this.duplicateDialogBodyTemplate,
-    // 안내 / 상태 문구
+    // 카메라 / 상태 문구
     required this.noHistoryMessage,
     required this.noCameraMessage,
     required this.cameraInitErrorTemplate,
     required this.cameraOverlayHint,
     required this.analyzingText,
-    required this.captureCompleteText,
     required this.captureFailedPrefix,
+    required this.galleryLabel,
+    required this.switchCameraLabel,
     // Gemini 실패/폴백 메시지 (분석 실패 시 "이름" 자리에 노출됨)
     required this.errorNoApiKey,
     required this.errorServerBusy,
     required this.errorStatusCodeTemplate,
     required this.errorGeneric,
     required this.errorNetworkOrApi,
-    // 홈 화면
-    required this.safetyMessages,
+    // 홈 / 검색 / 공지
+    required this.greetingTemplate,
     required this.searchPlaceholder,
-    required this.searchLaunchFailedMessage,
+    required this.noSearchResultMessage,
+    required this.safetyNoticeTitle,
+    required this.recentAnalysisTitle,
+    required this.viewAllButton,
+    required this.notificationsLabel,
+    required this.daysAgoTemplate,
+    required this.todayLabel,
+    required this.yesterdayLabel,
+    required this.noticeUrgentLabel,
+    required this.noticeCampaignLabel,
+    required this.noticeKeyPointsTitle,
+    required this.viewOriginalButton,
+    required this.launchFailedMessage,
+    // 표지판
     required this.categoryLogistics,
     required this.categoryElectrical,
     required this.categoryWoodworking,
     required this.categoryWelding,
     required this.categoryPress,
-    required this.noticeTitle,
-    required this.expandLabel,
-    required this.collapseLabel,
-    required this.employeeNumberTemplate,
-    required this.dangerSignageTitle,
-    required this.comingSoonMessage,
-    // 표지판 팝업 음성 듣기
+    required this.signageSubtitle,
+    required this.signTypeWarning,
+    required this.signTypeMandatory,
+    required this.signTypeProhibition,
+    required this.signPlaceLabel,
+    required this.signHazardLabel,
     required this.listenLabel,
     required this.ttsUnavailableMessage,
-    // 스플래시 화면
+    // 현장 관리자
+    required this.managerTitle,
+    required this.phoneLabel,
+    required this.locationLabel,
+    required this.workHoursLabel,
+    required this.callButton,
+    required this.messageLabel,
+    // 최근 기록
+    required this.historyCountTemplate,
+    required this.filterAllLabel,
+    required this.levelDangerLabel,
+    required this.levelCautionLabel,
+    required this.levelMandatoryLabel,
+    required this.noFilteredHistoryMessage,
+    // 스플래시
     required this.appSlogan,
-    // 로그인 화면
-    required this.loginIdLabel,
-    required this.loginPasswordLabel,
-    required this.loginButton,
-    required this.loginFailedMessage,
   });
 
-  /// shared_preferences 에 저장되는 값 (ko/en/vi)
+  /// shared_preferences 와 분석 결과 맵의 언어 키 (ko/en/vi/km/ne/th)
   final String code;
 
-  /// 언어 설정 화면에 보여줄 이름 (언어 자체의 이름이라 번역하지 않는다)
+  /// 그 언어 자체로 쓴 이름 (번역하지 않는다). 예: '한국어', 'ภาษาไทย'
   final String label;
+
+  /// 영어 이름. 언어 선택 시트에서 지금 고른 언어의 보조 줄에 쓴다.
+  final String englishName;
+
+  /// 언어 선택 시트에 보여줄 국기 이모지.
+  final String flag;
 
   /// Gemini 프롬프트에 "이 언어로 답해라" 라고 넣을 때 쓰는 이름
   final String promptName;
@@ -104,70 +138,68 @@ class AppLanguage {
   /// 관리자 확인 안내. AI 생성이 아니라 언어별로 코드에서 고정 삽입한다.
   final String managerNotice;
 
-  final String takePhotoButton;
-
-  /// 카메라 프리뷰의 "분석"(빠른 확인) 버튼. 기록에 저장하지 않는 가벼운 분석.
-  final String quickAnalyzeButton;
   final String retakeButton;
 
-  /// 하단 탭 라벨과 결과 화면의 "홈" 버튼에 공통으로 쓰인다.
+  /// 하단 탭의 홈 라벨.
   final String homeLabel;
-  final String backToListButton;
   final String viewRecordButton;
   final String confirmButton;
   final String cancelButton;
   final String deleteButton;
+  final String closeLabel;
+  final String shareLabel;
 
   final String hazardsTitle;
   final String ppeTitle;
   final String prohibitedTitle;
 
-  /// 결과 화면 하단의 "자세히 보기" 토글 버튼(접힌 상태일 때 라벨).
-  final String detailsLabel;
+  /// 분석 결과 화면(촬영 직후 / 기록 상세) 상단 제목.
+  final String analysisResultTitle;
 
-  /// 같은 토글 버튼의 펼친 상태 라벨("간단히 보기").
-  final String simpleViewLabel;
+  /// 분석 결과 화면 하단의 주요 버튼. 누르면 현장 관리자 화면으로 간다.
+  final String askManagerButton;
 
-  /// 홈 화면의 최근 기록 미리보기에서 최근 기록 탭으로 이동하는 버튼.
-  final String viewAllButton;
-
-  /// 하단 탭의 카메라 항목 라벨.
+  /// 하단 탭 가운데 카메라 버튼과 카메라 화면 제목.
   final String cameraLabel;
 
-  /// 하단 탭 라벨과 최근 기록 화면 AppBar 제목에 공통으로 쓰인다.
+  /// 하단 탭의 표지판 항목 라벨이자 표지판 화면 제목.
+  final String signageLabel;
+
+  /// 하단 탭의 기록 항목 라벨. 화면 제목은 [historyLabel] 을 쓴다.
+  final String historyTabLabel;
   final String historyLabel;
-
-  /// 하단 탭 라벨과 메뉴 화면 AppBar 제목에 공통으로 쓰인다.
   final String menuLabel;
-  final String historyDetailTitle;
 
-  /// 메뉴 목록 항목과 언어 설정 화면 AppBar 제목에 공통으로 쓰인다.
+  /// 메뉴의 언어 설정 항목.
   final String languageSettingsLabel;
-  final String languageSectionHeader;
+
+  /// 언어 선택 시트의 제목과 안내 문구.
+  final String languagePickerTitle;
+  final String languagePickerSubtitle;
+
+  /// 이 언어로 쓴 각 언어의 이름. 키는 [code]. 예: 한국어 UI 의 'en' → '영어'
+  final Map<String, String> languageNames;
 
   /// 메뉴 목록 항목이자 사용 방법 다이얼로그의 제목에 함께 쓰인다.
   final String howToUseLabel;
 
   /// 사용 방법 다이얼로그에 번호를 붙여 한 줄씩 보여줄 단계 설명.
-  /// 글을 많이 읽지 않아도 되게 짧은 문장으로 유지한다.
   final List<String> howToUseSteps;
 
-  /// 메뉴 목록 항목이자 앱 정보 다이얼로그의 제목에 함께 쓰인다.
   final String appInfoLabel;
-
-  /// 앱 정보 다이얼로그의 소개 한 줄.
   final String appDescription;
-
-  /// 메뉴 목록 항목이자 기록 전체 삭제 확인 다이얼로그의 제목에 함께 쓰인다.
   final String clearHistoryLabel;
   final String clearHistoryConfirmMessage;
 
   /// 기록을 모두 지운 뒤 띄우는 스낵바 문구.
   final String historyClearedMessage;
 
-  /// 메뉴 목록의 로그아웃 항목이자, 확인 다이얼로그의 실행 버튼에 함께 쓰인다.
-  final String logoutLabel;
-  final String logoutConfirmMessage;
+  /// 메뉴 화면의 묶음 제목.
+  final String appSettingsSection;
+  final String dataAccountSection;
+
+  /// 프로필의 사원번호 줄. '{number}' 자리를 사원번호로 치환해서 쓴다.
+  final String employeeNumberTemplate;
 
   final String duplicateDialogTitle;
 
@@ -181,10 +213,13 @@ class AppLanguage {
   final String cameraInitErrorTemplate;
   final String cameraOverlayHint;
   final String analyzingText;
-  final String captureCompleteText;
 
   /// 뒤에 예외 메시지($e)가 그대로 이어붙는 접두어.
   final String captureFailedPrefix;
+
+  /// 카메라 화면의 갤러리 / 카메라 전환 버튼 툴팁.
+  final String galleryLabel;
+  final String switchCameraLabel;
 
   final String errorNoApiKey;
   final String errorServerBusy;
@@ -194,12 +229,32 @@ class AppLanguage {
   final String errorGeneric;
   final String errorNetworkOrApi;
 
-  /// 홈 화면 상단에서 일정 시간마다 돌아가며 표시되는 안전 멘트 5개.
-  final List<String> safetyMessages;
+  /// 홈 인사말. '{name}' 자리에 이름이 들어가고 '\n' 에서 줄을 바꾼다.
+  final String greetingTemplate;
   final String searchPlaceholder;
+  final String noSearchResultMessage;
 
-  /// 검색어로 브라우저를 열지 못했을 때 보여주는 안내 문구.
-  final String searchLaunchFailedMessage;
+  /// 홈의 섹션 제목과 공지 목록 화면 제목.
+  final String safetyNoticeTitle;
+  final String recentAnalysisTitle;
+  final String viewAllButton;
+
+  /// 홈 오른쪽 위 종 버튼 툴팁.
+  final String notificationsLabel;
+
+  /// '{n}' 자리에 며칠 전인지 들어간다.
+  final String daysAgoTemplate;
+  final String todayLabel;
+  final String yesterdayLabel;
+
+  /// 공지 등급 라벨.
+  final String noticeUrgentLabel;
+  final String noticeCampaignLabel;
+  final String noticeKeyPointsTitle;
+  final String viewOriginalButton;
+
+  /// 브라우저/전화/문자 앱을 열지 못했을 때 보여주는 안내 문구.
+  final String launchFailedMessage;
 
   final String categoryLogistics;
   final String categoryElectrical;
@@ -207,154 +262,200 @@ class AppLanguage {
   final String categoryWelding;
   final String categoryPress;
 
-  /// 홈 화면 맨 위, 안전 멘트가 돌아가는 영역의 제목.
-  final String noticeTitle;
+  /// 표지판 화면 제목 아래 안내 줄.
+  final String signageSubtitle;
 
-  /// 공지사항 접기/펼치기 화살표의 툴팁. 지금 상태의 반대 동작을 가리킨다.
-  final String expandLabel;
-  final String collapseLabel;
+  /// 표지판 종류 (경고 / 지시 / 금지).
+  final String signTypeWarning;
+  final String signTypeMandatory;
+  final String signTypeProhibition;
 
-  /// 홈 화면 프로필의 사원번호 줄. '{number}' 자리를 사원번호로 치환해서 쓴다.
-  final String employeeNumberTemplate;
+  /// 표지판 상세의 "붙는 곳" / "위험" 줄 라벨.
+  final String signPlaceLabel;
+  final String signHazardLabel;
 
-  /// 홈 화면 하단, 선택된 카테고리의 표지판 카드 그리드 제목.
-  final String dangerSignageTitle;
-
-  /// 아직 구현되지 않은 화면에 쓰는 안내 문구.
-  final String comingSoonMessage;
-
-  /// 표지판 팝업의 "음성 듣기" 버튼.
+  /// "음성으로 듣기" 버튼 (표지판 상세 / 결과 스피커 툴팁).
   final String listenLabel;
 
   /// 폰이 현재 언어의 음성(TTS)을 지원하지 않을 때 보여주는 안내 문구.
   final String ttsUnavailableMessage;
 
-  /// 스플래시 화면에서 앱 이름 아래에 뜨는 슬로건. 현재 언어의 것 하나만 보여준다.
+  /// 현장 관리자 화면.
+  final String managerTitle;
+  final String phoneLabel;
+  final String locationLabel;
+  final String workHoursLabel;
+  final String callButton;
+  final String messageLabel;
+
+  /// 최근 기록 제목 아래 요약 줄. '{count}' 자리에 강조된 기록 수가 들어간다.
+  final String historyCountTemplate;
+  final String filterAllLabel;
+
+  /// 위험도 배지·필터 라벨 (위험 / 주의 / 필수).
+  final String levelDangerLabel;
+  final String levelCautionLabel;
+  final String levelMandatoryLabel;
+
+  /// 필터를 걸었을 때 맞는 기록이 없으면 보여주는 문구.
+  final String noFilteredHistoryMessage;
+
+  /// 스플래시 화면에서 앱 이름 아래에 뜨는 슬로건.
   final String appSlogan;
-
-  final String loginIdLabel;
-  final String loginPasswordLabel;
-  final String loginButton;
-
-  /// 아이디/비밀번호가 [DemoAccount] 와 다를 때 입력창 아래에 뜨는 문구.
-  final String loginFailedMessage;
 
   static const ko = AppLanguage._(
     code: 'ko',
     label: '한국어',
+    englishName: 'Korean',
+    flag: '🇰🇷',
     promptName: '한국어',
     unknownLabel: '알 수 없음',
-    managerNotice: '정확한 작동 방법은 반드시 현장 관리자에게 확인하세요',
-    takePhotoButton: '촬영하기',
-    quickAnalyzeButton: '분석',
+    managerNotice: '장비를 작동하기 전에는 반드시 현장 관리자에게 확인하세요.',
     retakeButton: '다시 찍기',
     homeLabel: '홈',
-    backToListButton: '목록으로',
     viewRecordButton: '기록 보기',
     confirmButton: '확인',
     cancelButton: '취소',
     deleteButton: '삭제',
-    hazardsTitle: '위험 요소',
-    ppeTitle: '필요 보호구',
-    prohibitedTitle: '금지 행동',
-    detailsLabel: '자세히 보기',
-    simpleViewLabel: '간단히 보기',
-    viewAllButton: '전체 보기',
+    closeLabel: '닫기',
+    shareLabel: '공유',
+    hazardsTitle: '이런 위험이 있어요',
+    ppeTitle: '이건 꼭 착용하세요',
+    prohibitedTitle: '이건 하지 마세요',
+    analysisResultTitle: '분석 결과',
+    askManagerButton: '관리자에게 작동법 확인',
     cameraLabel: '카메라',
+    signageLabel: '표지판',
+    historyTabLabel: '기록',
     historyLabel: '최근 기록',
     menuLabel: '메뉴',
-    historyDetailTitle: '기록 상세',
     languageSettingsLabel: '언어 설정',
-    languageSectionHeader: '분석 결과를 받을 언어',
+    languagePickerTitle: '언어 선택',
+    languagePickerSubtitle: '고른 언어로 앱 전체 문구와 분석 결과가 즉시 바뀝니다',
+    languageNames: {
+      'ko': '한국어',
+      'en': '영어',
+      'vi': '베트남어',
+      'km': '캄보디아어',
+      'ne': '네팔어',
+      'th': '태국어',
+    },
     howToUseLabel: '사용 방법',
     howToUseSteps: [
-      '카메라 탭을 눌러 물건을 촬영하세요',
+      '가운데 카메라 버튼을 눌러 물건을 촬영하세요',
       'AI가 물건과 안전 정보를 알려줘요',
-      '최근 기록에서 다시 볼 수 있어요',
+      '기록 탭에서 다시 볼 수 있어요',
     ],
     appInfoLabel: '앱 정보',
     appDescription: '스마트제조 현장 외국인 근로자를 위한 안전 정보 앱',
     clearHistoryLabel: '기록 전체 삭제',
     clearHistoryConfirmMessage: '모든 기록을 삭제하시겠어요?\n저장된 사진도 함께 지워집니다.',
     historyClearedMessage: '모든 기록을 삭제했어요',
-    logoutLabel: '로그아웃',
-    logoutConfirmMessage: '로그아웃 하시겠어요?',
+    appSettingsSection: '앱 설정',
+    dataAccountSection: '데이터 · 계정',
+    employeeNumberTemplate: '사원번호 {number}',
     duplicateDialogTitle: '중복 촬영',
     duplicateDialogBodyTemplate: '오늘 이미 이 물건을 찍은 기록이 있어요.\n\n장비 품명 = {name}',
     noHistoryMessage: '아직 기록이 없어요',
     noCameraMessage: '사용 가능한 카메라가 없습니다.\n실기기(USB 연결)에서 실행하세요.',
     cameraInitErrorTemplate: '카메라 초기화 실패: {error}\n권한을 허용했는지 확인하세요.',
-    cameraOverlayHint: '궁금한 물건을 네모 안에 맞추세요',
+    cameraOverlayHint: '궁금한 물건을 화면에 담고 촬영하세요',
     analyzingText: '분석 중...',
-    captureCompleteText: '촬영 완료',
     captureFailedPrefix: '촬영 실패: ',
+    galleryLabel: '사진 불러오기',
+    switchCameraLabel: '카메라 전환',
     errorNoApiKey: '인식 실패 (API 키 없음)',
     errorServerBusy: '서버가 혼잡합니다. 잠시 후 다시 시도하세요',
     errorStatusCodeTemplate: '인식 실패 (상태코드: {code})',
     errorGeneric: '인식 실패',
     errorNetworkOrApi: '인식 실패 (네트워크 또는 API 오류)',
-    safetyMessages: [
-      '안전하게, 작업 전 보호구를 확인하세요',
-      '위험한 기계는 카메라로 비춰 확인하세요',
-      '몸이 아프면 참지 말고 관리자에게 알리세요',
-      '비상정지 버튼 위치를 미리 확인해 두세요',
-      '더운 날엔 물을 자주 마시고 쉬어가세요',
-    ],
-    searchPlaceholder: '검색',
-    searchLaunchFailedMessage: '브라우저를 열 수 없어요',
+    greetingTemplate: '{name} 님,\n오늘도 안전하게',
+    searchPlaceholder: '이름이나 설명으로 장비·표지판 찾기',
+    noSearchResultMessage: '검색 결과가 없어요',
+    safetyNoticeTitle: '안전 공지',
+    recentAnalysisTitle: '최근 분석',
+    viewAllButton: '전체 보기',
+    notificationsLabel: '알림',
+    daysAgoTemplate: '{n}일 전',
+    todayLabel: '오늘',
+    yesterdayLabel: '어제',
+    noticeUrgentLabel: '긴급',
+    noticeCampaignLabel: '캠페인',
+    noticeKeyPointsTitle: '주요 안내',
+    viewOriginalButton: '원문 보기',
+    launchFailedMessage: '열 수 없어요',
     categoryLogistics: '물류',
     categoryElectrical: '전기',
     categoryWoodworking: '목공',
     categoryWelding: '용접',
     categoryPress: '프레스',
-    noticeTitle: '공지사항',
-    expandLabel: '펼치기',
-    collapseLabel: '접기',
-    employeeNumberTemplate: '사원번호 {number}',
-    dangerSignageTitle: '위험 표지판',
-    comingSoonMessage: '준비 중입니다',
-    listenLabel: '음성 듣기',
+    signageSubtitle: '현장에 붙는 안전 표지판을 찾아보세요',
+    signTypeWarning: '경고',
+    signTypeMandatory: '지시',
+    signTypeProhibition: '금지',
+    signPlaceLabel: '붙는 곳',
+    signHazardLabel: '위험',
+    listenLabel: '음성으로 듣기',
     ttsUnavailableMessage: '이 언어의 음성을 사용할 수 없습니다',
+    managerTitle: '현장 관리자',
+    phoneLabel: '전화번호',
+    locationLabel: '위치',
+    workHoursLabel: '근무 시간',
+    callButton: '전화 걸기',
+    messageLabel: '문자 보내기',
+    historyCountTemplate: '지금까지 {count}건 분석',
+    filterAllLabel: '전체',
+    levelDangerLabel: '위험',
+    levelCautionLabel: '주의',
+    levelMandatoryLabel: '필수',
+    noFilteredHistoryMessage: '해당하는 기록이 없어요',
     appSlogan: '일 할때도 안전하게',
-    loginIdLabel: '아이디',
-    loginPasswordLabel: '비밀번호',
-    loginButton: '로그인',
-    loginFailedMessage: '아이디 또는 비밀번호가 올바르지 않습니다',
   );
 
   static const en = AppLanguage._(
     code: 'en',
     label: 'English',
+    englishName: 'English',
+    flag: '🇺🇸',
     promptName: 'English',
     unknownLabel: 'Unknown',
     managerNotice:
-        'Always confirm the correct operation with your on-site manager.',
-    takePhotoButton: 'Take Photo',
-    quickAnalyzeButton: 'Analyze',
+        'Always check with your on-site manager before operating equipment.',
     retakeButton: 'Retake',
     homeLabel: 'Home',
-    backToListButton: 'Back to List',
     viewRecordButton: 'View Record',
     confirmButton: 'OK',
     cancelButton: 'Cancel',
     deleteButton: 'Delete',
-    hazardsTitle: 'Hazards',
-    ppeTitle: 'Required PPE',
-    prohibitedTitle: 'Prohibited Actions',
-    detailsLabel: 'View Details',
-    simpleViewLabel: 'Simple View',
-    viewAllButton: 'View All',
+    closeLabel: 'Close',
+    shareLabel: 'Share',
+    hazardsTitle: 'Watch Out for These',
+    ppeTitle: 'Always Wear These',
+    prohibitedTitle: "Don't Do This",
+    analysisResultTitle: 'Analysis Result',
+    askManagerButton: 'Ask a Manager How to Use',
     cameraLabel: 'Camera',
+    signageLabel: 'Signs',
+    historyTabLabel: 'History',
     historyLabel: 'History',
     menuLabel: 'Menu',
-    historyDetailTitle: 'Record Details',
-    languageSettingsLabel: 'Language Settings',
-    languageSectionHeader: 'Language for analysis results',
+    languageSettingsLabel: 'Language',
+    languagePickerTitle: 'Choose Language',
+    languagePickerSubtitle:
+        'All app text and analysis results switch to this language right away',
+    languageNames: {
+      'ko': 'Korean',
+      'en': 'English',
+      'vi': 'Vietnamese',
+      'km': 'Khmer',
+      'ne': 'Nepali',
+      'th': 'Thai',
+    },
     howToUseLabel: 'How to Use',
     howToUseSteps: [
-      'Tap the Camera tab and take a photo of the item',
+      'Tap the camera button in the middle and take a photo of the item',
       'AI tells you what it is and how to stay safe',
-      'You can see it again in History',
+      'You can see it again in the History tab',
     ],
     appInfoLabel: 'App Info',
     appDescription:
@@ -363,8 +464,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'Delete all records?\nSaved photos will be deleted too.',
     historyClearedMessage: 'All records deleted',
-    logoutLabel: 'Log Out',
-    logoutConfirmMessage: 'Do you want to log out?',
+    appSettingsSection: 'App Settings',
+    dataAccountSection: 'Data · Account',
+    employeeNumberTemplate: 'Employee No. {number}',
     duplicateDialogTitle: 'Duplicate Photo',
     duplicateDialogBodyTemplate:
         'You already have a record of this item today.\n\nItem name = {name}',
@@ -373,77 +475,103 @@ class AppLanguage {
         'No camera available.\nPlease run on a physical device (USB connected).',
     cameraInitErrorTemplate:
         'Camera initialization failed: {error}\nPlease check that permission was granted.',
-    cameraOverlayHint: 'Fit the item you want to check inside the box',
+    cameraOverlayHint: 'Frame the item on screen and take a photo',
     analyzingText: 'Analyzing...',
-    captureCompleteText: 'Capture complete',
     captureFailedPrefix: 'Capture failed: ',
+    galleryLabel: 'Choose Photo',
+    switchCameraLabel: 'Switch Camera',
     errorNoApiKey: 'Recognition failed (missing API key)',
     errorServerBusy: 'The server is busy. Please try again in a moment.',
     errorStatusCodeTemplate: 'Recognition failed (status code: {code})',
     errorGeneric: 'Recognition failed',
     errorNetworkOrApi: 'Recognition failed (network or API error)',
-    safetyMessages: [
-      'Stay safe today—check your protective gear before work',
-      'Point your camera at unfamiliar machines to check them',
-      'If you feel unwell, tell your manager right away',
-      'Know where the emergency stop button is',
-      'Drink water often and take breaks on hot days',
-    ],
-    searchPlaceholder: 'Search',
-    searchLaunchFailedMessage: "Couldn't open the browser",
+    greetingTemplate: 'Hi {name},\nstay safe today',
+    searchPlaceholder: 'Search equipment and signs',
+    noSearchResultMessage: 'No results found',
+    safetyNoticeTitle: 'Safety Notices',
+    recentAnalysisTitle: 'Recent Analysis',
+    viewAllButton: 'View All',
+    notificationsLabel: 'Notifications',
+    daysAgoTemplate: '{n} days ago',
+    todayLabel: 'Today',
+    yesterdayLabel: 'Yesterday',
+    noticeUrgentLabel: 'Urgent',
+    noticeCampaignLabel: 'Campaign',
+    noticeKeyPointsTitle: 'Key Points',
+    viewOriginalButton: 'View Original',
+    launchFailedMessage: "Couldn't open it",
     categoryLogistics: 'Logistics',
     categoryElectrical: 'Electrical',
     categoryWoodworking: 'Woodworking',
     categoryWelding: 'Welding',
     categoryPress: 'Press',
-    noticeTitle: 'Notices',
-    expandLabel: 'Expand',
-    collapseLabel: 'Collapse',
-    employeeNumberTemplate: 'Employee No. {number}',
-    dangerSignageTitle: 'Danger Signage',
-    comingSoonMessage: 'Coming soon',
+    signageSubtitle: 'Look up the safety signs used on site',
+    signTypeWarning: 'Warning',
+    signTypeMandatory: 'Mandatory',
+    signTypeProhibition: 'Prohibited',
+    signPlaceLabel: 'Found at',
+    signHazardLabel: 'Hazard',
     listenLabel: 'Listen',
     ttsUnavailableMessage: 'Voice for this language is not available',
+    managerTitle: 'On-site Manager',
+    phoneLabel: 'Phone',
+    locationLabel: 'Location',
+    workHoursLabel: 'Working Hours',
+    callButton: 'Call',
+    messageLabel: 'Send Message',
+    historyCountTemplate: '{count} analyzed so far',
+    filterAllLabel: 'All',
+    levelDangerLabel: 'Danger',
+    levelCautionLabel: 'Caution',
+    levelMandatoryLabel: 'Required',
+    noFilteredHistoryMessage: 'No matching records',
     appSlogan: 'Safe at every job',
-    loginIdLabel: 'ID',
-    loginPasswordLabel: 'Password',
-    loginButton: 'Log In',
-    loginFailedMessage: 'The ID or password is incorrect',
   );
 
   static const vi = AppLanguage._(
     code: 'vi',
     label: 'Tiếng Việt',
+    englishName: 'Vietnamese',
+    flag: '🇻🇳',
     promptName: 'Tiếng Việt (Vietnamese)',
     unknownLabel: 'Không rõ',
     managerNotice:
-        'Hãy luôn xác nhận cách vận hành chính xác với quản lý hiện trường.',
-    takePhotoButton: 'Chụp ảnh',
-    quickAnalyzeButton: 'Phân tích',
+        'Hãy luôn hỏi quản lý hiện trường trước khi vận hành thiết bị.',
     retakeButton: 'Chụp lại',
     homeLabel: 'Trang chủ',
-    backToListButton: 'Về danh sách',
     viewRecordButton: 'Xem bản ghi',
     confirmButton: 'Đồng ý',
     cancelButton: 'Hủy',
     deleteButton: 'Xóa',
-    hazardsTitle: 'Nguy cơ',
-    ppeTitle: 'Thiết bị bảo hộ cần thiết',
-    prohibitedTitle: 'Hành động cấm',
-    detailsLabel: 'Xem chi tiết',
-    simpleViewLabel: 'Xem đơn giản',
-    viewAllButton: 'Xem tất cả',
+    closeLabel: 'Đóng',
+    shareLabel: 'Chia sẻ',
+    hazardsTitle: 'Có những nguy hiểm này',
+    ppeTitle: 'Bắt buộc phải mang',
+    prohibitedTitle: 'Không được làm điều này',
+    analysisResultTitle: 'Kết quả phân tích',
+    askManagerButton: 'Hỏi quản lý cách vận hành',
     cameraLabel: 'Máy ảnh',
-    historyLabel: 'Lịch sử',
+    signageLabel: 'Biển báo',
+    historyTabLabel: 'Lịch sử',
+    historyLabel: 'Lịch sử gần đây',
     menuLabel: 'Menu',
-    historyDetailTitle: 'Chi tiết bản ghi',
-    languageSettingsLabel: 'Cài đặt ngôn ngữ',
-    languageSectionHeader: 'Ngôn ngữ nhận kết quả phân tích',
+    languageSettingsLabel: 'Ngôn ngữ',
+    languagePickerTitle: 'Chọn ngôn ngữ',
+    languagePickerSubtitle:
+        'Toàn bộ nội dung ứng dụng và kết quả phân tích sẽ đổi ngay sang ngôn ngữ đã chọn',
+    languageNames: {
+      'ko': 'Tiếng Hàn',
+      'en': 'Tiếng Anh',
+      'vi': 'Tiếng Việt',
+      'km': 'Tiếng Khmer',
+      'ne': 'Tiếng Nepal',
+      'th': 'Tiếng Thái',
+    },
     howToUseLabel: 'Hướng dẫn sử dụng',
     howToUseSteps: [
-      'Nhấn tab Máy ảnh và chụp ảnh vật cần kiểm tra',
+      'Nhấn nút máy ảnh ở giữa và chụp ảnh vật cần kiểm tra',
       'AI cho bạn biết đó là gì và cách làm việc an toàn',
-      'Bạn có thể xem lại trong Lịch sử',
+      'Bạn có thể xem lại trong tab Lịch sử',
     ],
     appInfoLabel: 'Thông tin ứng dụng',
     appDescription:
@@ -452,8 +580,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'Xóa toàn bộ bản ghi?\nẢnh đã lưu cũng sẽ bị xóa.',
     historyClearedMessage: 'Đã xóa toàn bộ bản ghi',
-    logoutLabel: 'Đăng xuất',
-    logoutConfirmMessage: 'Bạn có muốn đăng xuất không?',
+    appSettingsSection: 'Cài đặt ứng dụng',
+    dataAccountSection: 'Dữ liệu · Tài khoản',
+    employeeNumberTemplate: 'Mã nhân viên {number}',
     duplicateDialogTitle: 'Trùng lặp ảnh chụp',
     duplicateDialogBodyTemplate:
         'Hôm nay bạn đã chụp vật này rồi.\n\nTên thiết bị = {name}',
@@ -462,45 +591,405 @@ class AppLanguage {
         'Không có camera khả dụng.\nVui lòng chạy trên thiết bị thật (kết nối USB).',
     cameraInitErrorTemplate:
         'Khởi tạo camera thất bại: {error}\nVui lòng kiểm tra quyền truy cập đã được cấp chưa.',
-    cameraOverlayHint: 'Đặt vật cần kiểm tra vào trong khung',
+    cameraOverlayHint: 'Đưa vật cần kiểm tra vào màn hình rồi chụp',
     analyzingText: 'Đang phân tích...',
-    captureCompleteText: 'Đã chụp xong',
     captureFailedPrefix: 'Chụp ảnh thất bại: ',
+    galleryLabel: 'Chọn ảnh',
+    switchCameraLabel: 'Đổi camera',
     errorNoApiKey: 'Nhận diện thất bại (thiếu khóa API)',
     errorServerBusy: 'Máy chủ đang quá tải. Vui lòng thử lại sau.',
     errorStatusCodeTemplate: 'Nhận diện thất bại (mã trạng thái: {code})',
     errorGeneric: 'Nhận diện thất bại',
     errorNetworkOrApi: 'Nhận diện thất bại (lỗi mạng hoặc API)',
-    safetyMessages: [
-      'Hãy an toàn hôm nay — kiểm tra đồ bảo hộ trước khi làm việc',
-      'Hãy chụp ảnh máy móc lạ để kiểm tra mức độ nguy hiểm',
-      'Nếu cảm thấy không khỏe, đừng cố chịu đựng — hãy báo ngay cho quản lý',
-      'Hãy xác định trước vị trí nút dừng khẩn cấp',
-      'Vào ngày nóng, hãy uống nước thường xuyên và nghỉ ngơi',
-    ],
-    searchPlaceholder: 'Tìm kiếm',
-    searchLaunchFailedMessage: 'Không thể mở trình duyệt',
+    greetingTemplate: 'Chào {name},\nhôm nay cũng an toàn nhé',
+    searchPlaceholder: 'Tìm thiết bị, biển báo theo tên hoặc mô tả',
+    noSearchResultMessage: 'Không có kết quả',
+    safetyNoticeTitle: 'Thông báo an toàn',
+    recentAnalysisTitle: 'Phân tích gần đây',
+    viewAllButton: 'Xem tất cả',
+    notificationsLabel: 'Thông báo',
+    daysAgoTemplate: '{n} ngày trước',
+    todayLabel: 'Hôm nay',
+    yesterdayLabel: 'Hôm qua',
+    noticeUrgentLabel: 'Khẩn cấp',
+    noticeCampaignLabel: 'Chiến dịch',
+    noticeKeyPointsTitle: 'Nội dung chính',
+    viewOriginalButton: 'Xem bản gốc',
+    launchFailedMessage: 'Không thể mở',
     categoryLogistics: 'Hậu cần',
     categoryElectrical: 'Điện',
     categoryWoodworking: 'Mộc',
     categoryWelding: 'Hàn',
     categoryPress: 'Máy ép',
-    noticeTitle: 'Thông báo',
-    expandLabel: 'Mở rộng',
-    collapseLabel: 'Thu gọn',
-    employeeNumberTemplate: 'Mã nhân viên {number}',
-    dangerSignageTitle: 'Biển báo nguy hiểm',
-    comingSoonMessage: 'Đang chuẩn bị',
-    listenLabel: 'Nghe',
+    signageSubtitle: 'Tra cứu các biển báo an toàn tại hiện trường',
+    signTypeWarning: 'Cảnh báo',
+    signTypeMandatory: 'Bắt buộc',
+    signTypeProhibition: 'Cấm',
+    signPlaceLabel: 'Vị trí',
+    signHazardLabel: 'Nguy cơ',
+    listenLabel: 'Nghe bằng giọng nói',
     ttsUnavailableMessage: 'Không có sẵn giọng đọc cho ngôn ngữ này',
+    managerTitle: 'Quản lý hiện trường',
+    phoneLabel: 'Số điện thoại',
+    locationLabel: 'Vị trí',
+    workHoursLabel: 'Giờ làm việc',
+    callButton: 'Gọi điện',
+    messageLabel: 'Nhắn tin',
+    historyCountTemplate: 'Đã phân tích {count} lần',
+    filterAllLabel: 'Tất cả',
+    levelDangerLabel: 'Nguy hiểm',
+    levelCautionLabel: 'Chú ý',
+    levelMandatoryLabel: 'Bắt buộc',
+    noFilteredHistoryMessage: 'Không có bản ghi phù hợp',
     appSlogan: 'An toàn trong mọi công việc',
-    loginIdLabel: 'Tên đăng nhập',
-    loginPasswordLabel: 'Mật khẩu',
-    loginButton: 'Đăng nhập',
-    loginFailedMessage: 'Tên đăng nhập hoặc mật khẩu không đúng',
   );
 
-  static const all = [ko, en, vi];
+  static const km = AppLanguage._(
+    code: 'km',
+    label: 'ភាសាខ្មែរ',
+    englishName: 'Khmer',
+    flag: '🇰🇭',
+    promptName: 'ភាសាខ្មែរ (Khmer)',
+    unknownLabel: 'មិនដឹង',
+    managerNotice:
+        'មុនពេលប្រើប្រាស់ឧបករណ៍ ត្រូវសួរអ្នកគ្រប់គ្រងការដ្ឋានជានិច្ច។',
+    retakeButton: 'ថតម្តងទៀត',
+    homeLabel: 'ទំព័រដើម',
+    viewRecordButton: 'មើលកំណត់ត្រា',
+    confirmButton: 'យល់ព្រម',
+    cancelButton: 'បោះបង់',
+    deleteButton: 'លុប',
+    closeLabel: 'បិទ',
+    shareLabel: 'ចែករំលែក',
+    hazardsTitle: 'មានគ្រោះថ្នាក់ទាំងនេះ',
+    ppeTitle: 'ត្រូវពាក់ទាំងនេះ',
+    prohibitedTitle: 'កុំធ្វើការទាំងនេះ',
+    analysisResultTitle: 'លទ្ធផលវិភាគ',
+    askManagerButton: 'សួរអ្នកគ្រប់គ្រងពីរបៀបប្រើ',
+    cameraLabel: 'កាមេរ៉ា',
+    signageLabel: 'ស្លាកសញ្ញា',
+    historyTabLabel: 'កំណត់ត្រា',
+    historyLabel: 'កំណត់ត្រាថ្មីៗ',
+    menuLabel: 'ម៉ឺនុយ',
+    languageSettingsLabel: 'ភាសា',
+    languagePickerTitle: 'ជ្រើសរើសភាសា',
+    languagePickerSubtitle:
+        'អត្ថបទទាំងអស់ និងលទ្ធផលវិភាគនឹងប្តូរទៅភាសាដែលបានជ្រើសភ្លាមៗ',
+    languageNames: {
+      'ko': 'ភាសាកូរ៉េ',
+      'en': 'ភាសាអង់គ្លេស',
+      'vi': 'ភាសាវៀតណាម',
+      'km': 'ភាសាខ្មែរ',
+      'ne': 'ភាសានេប៉ាល់',
+      'th': 'ភាសាថៃ',
+    },
+    howToUseLabel: 'របៀបប្រើ',
+    howToUseSteps: [
+      'ចុចប៊ូតុងកាមេរ៉ានៅកណ្តាល ហើយថតរូបវត្ថុ',
+      'AI នឹងប្រាប់អ្នកថាវាជាអ្វី និងរបៀបធ្វើការឱ្យមានសុវត្ថិភាព',
+      'អ្នកអាចមើលម្តងទៀតនៅផ្ទាំងកំណត់ត្រា',
+    ],
+    appInfoLabel: 'ព័ត៌មានកម្មវិធី',
+    appDescription:
+        'កម្មវិធីព័ត៌មានសុវត្ថិភាពសម្រាប់កម្មករបរទេសក្នុងរោងចក្រឆ្លាតវៃ',
+    clearHistoryLabel: 'លុបកំណត់ត្រាទាំងអស់',
+    clearHistoryConfirmMessage:
+        'លុបកំណត់ត្រាទាំងអស់?\nរូបថតដែលបានរក្សាទុកក៏នឹងត្រូវលុបដែរ។',
+    historyClearedMessage: 'បានលុបកំណត់ត្រាទាំងអស់',
+    appSettingsSection: 'ការកំណត់កម្មវិធី',
+    dataAccountSection: 'ទិន្នន័យ · គណនី',
+    employeeNumberTemplate: 'លេខបុគ្គលិក {number}',
+    duplicateDialogTitle: 'ថតស្ទួន',
+    duplicateDialogBodyTemplate:
+        'ថ្ងៃនេះអ្នកបានថតវត្ថុនេះរួចហើយ។\n\nឈ្មោះឧបករណ៍ = {name}',
+    noHistoryMessage: 'មិនទាន់មានកំណត់ត្រានៅឡើយ',
+    noCameraMessage:
+        'គ្មានកាមេរ៉ាដែលអាចប្រើបាន។\nសូមដំណើរការលើឧបករណ៍ពិត (ភ្ជាប់ USB)។',
+    cameraInitErrorTemplate:
+        'ចាប់ផ្តើមកាមេរ៉ាបរាជ័យ: {error}\nសូមពិនិត្យថាបានអនុញ្ញាតសិទ្ធិហើយ។',
+    cameraOverlayHint: 'ដាក់វត្ថុដែលចង់ដឹងក្នុងអេក្រង់ ហើយថត',
+    analyzingText: 'កំពុងវិភាគ...',
+    captureFailedPrefix: 'ថតបរាជ័យ: ',
+    galleryLabel: 'ជ្រើសរូបថត',
+    switchCameraLabel: 'ប្តូរកាមេរ៉ា',
+    errorNoApiKey: 'ស្គាល់បរាជ័យ (គ្មានសោ API)',
+    errorServerBusy: 'ម៉ាស៊ីនមេរវល់។ សូមព្យាយាមម្តងទៀតបន្តិចក្រោយ',
+    errorStatusCodeTemplate: 'ស្គាល់បរាជ័យ (លេខកូដស្ថានភាព: {code})',
+    errorGeneric: 'ស្គាល់បរាជ័យ',
+    errorNetworkOrApi: 'ស្គាល់បរាជ័យ (បញ្ហាបណ្តាញ ឬ API)',
+    greetingTemplate: 'សួស្តី {name}\nថ្ងៃនេះក៏ត្រូវមានសុវត្ថិភាព',
+    searchPlaceholder: 'ស្វែងរកឧបករណ៍ និងស្លាកសញ្ញា',
+    noSearchResultMessage: 'រកមិនឃើញលទ្ធផល',
+    safetyNoticeTitle: 'សេចក្តីជូនដំណឹងសុវត្ថិភាព',
+    recentAnalysisTitle: 'ការវិភាគថ្មីៗ',
+    viewAllButton: 'មើលទាំងអស់',
+    notificationsLabel: 'ការជូនដំណឹង',
+    daysAgoTemplate: '{n} ថ្ងៃមុន',
+    todayLabel: 'ថ្ងៃនេះ',
+    yesterdayLabel: 'ម្សិលមិញ',
+    noticeUrgentLabel: 'បន្ទាន់',
+    noticeCampaignLabel: 'យុទ្ធនាការ',
+    noticeKeyPointsTitle: 'ចំណុចសំខាន់',
+    viewOriginalButton: 'មើលឯកសារដើម',
+    launchFailedMessage: 'មិនអាចបើកបានទេ',
+    categoryLogistics: 'ដឹកជញ្ជូន',
+    categoryElectrical: 'អគ្គិសនី',
+    categoryWoodworking: 'ជាងឈើ',
+    categoryWelding: 'ផ្សារ',
+    categoryPress: 'ម៉ាស៊ីនសង្កត់',
+    signageSubtitle: 'ស្វែងរកស្លាកសញ្ញាសុវត្ថិភាពនៅការដ្ឋាន',
+    signTypeWarning: 'ព្រមាន',
+    signTypeMandatory: 'បង្គាប់',
+    signTypeProhibition: 'ហាមឃាត់',
+    signPlaceLabel: 'ទីតាំង',
+    signHazardLabel: 'គ្រោះថ្នាក់',
+    listenLabel: 'ស្តាប់ជាសំឡេង',
+    ttsUnavailableMessage: 'មិនមានសំឡេងសម្រាប់ភាសានេះទេ',
+    managerTitle: 'អ្នកគ្រប់គ្រងការដ្ឋាន',
+    phoneLabel: 'លេខទូរស័ព្ទ',
+    locationLabel: 'ទីតាំង',
+    workHoursLabel: 'ម៉ោងធ្វើការ',
+    callButton: 'ហៅទូរស័ព្ទ',
+    messageLabel: 'ផ្ញើសារ',
+    historyCountTemplate: 'បានវិភាគ {count} ដង',
+    filterAllLabel: 'ទាំងអស់',
+    levelDangerLabel: 'គ្រោះថ្នាក់',
+    levelCautionLabel: 'ប្រុងប្រយ័ត្ន',
+    levelMandatoryLabel: 'ចាំបាច់',
+    noFilteredHistoryMessage: 'គ្មានកំណត់ត្រាដែលត្រូវគ្នា',
+    appSlogan: 'ធ្វើការដោយសុវត្ថិភាព',
+  );
+
+  static const ne = AppLanguage._(
+    code: 'ne',
+    label: 'नेपाली',
+    englishName: 'Nepali',
+    flag: '🇳🇵',
+    promptName: 'नेपाली (Nepali)',
+    unknownLabel: 'थाहा छैन',
+    managerNotice: 'उपकरण चलाउनु अघि सधैं साइट प्रबन्धकसँग सोध्नुहोस्।',
+    retakeButton: 'फेरि खिच्नुहोस्',
+    homeLabel: 'गृह',
+    viewRecordButton: 'रेकर्ड हेर्नुहोस्',
+    confirmButton: 'ठीक छ',
+    cancelButton: 'रद्द गर्नुहोस्',
+    deleteButton: 'मेटाउनुहोस्',
+    closeLabel: 'बन्द गर्नुहोस्',
+    shareLabel: 'सेयर गर्नुहोस्',
+    hazardsTitle: 'यी खतराहरू छन्',
+    ppeTitle: 'यी अनिवार्य लगाउनुहोस्',
+    prohibitedTitle: 'यो नगर्नुहोस्',
+    analysisResultTitle: 'विश्लेषण नतिजा',
+    askManagerButton: 'प्रबन्धकसँग चलाउने तरिका सोध्नुहोस्',
+    cameraLabel: 'क्यामेरा',
+    signageLabel: 'चिन्हहरू',
+    historyTabLabel: 'रेकर्ड',
+    historyLabel: 'हालका रेकर्ड',
+    menuLabel: 'मेनु',
+    languageSettingsLabel: 'भाषा',
+    languagePickerTitle: 'भाषा छान्नुहोस्',
+    languagePickerSubtitle:
+        'छानिएको भाषामा एपका सबै शब्द र विश्लेषण नतिजा तुरुन्तै बदलिन्छन्',
+    languageNames: {
+      'ko': 'कोरियाली',
+      'en': 'अंग्रेजी',
+      'vi': 'भियतनामी',
+      'km': 'खमेर',
+      'ne': 'नेपाली',
+      'th': 'थाई',
+    },
+    howToUseLabel: 'प्रयोग गर्ने तरिका',
+    howToUseSteps: [
+      'बीचको क्यामेरा बटन थिचेर वस्तुको फोटो खिच्नुहोस्',
+      'AI ले त्यो के हो र सुरक्षित कसरी काम गर्ने भनेर बताउँछ',
+      'रेकर्ड ट्याबमा फेरि हेर्न सकिन्छ',
+    ],
+    appInfoLabel: 'एप जानकारी',
+    appDescription:
+        'स्मार्ट कारखानाका विदेशी कामदारहरूका लागि सुरक्षा जानकारी एप',
+    clearHistoryLabel: 'सबै रेकर्ड मेटाउनुहोस्',
+    clearHistoryConfirmMessage:
+        'सबै रेकर्ड मेटाउने हो?\nसुरक्षित फोटोहरू पनि मेटिन्छन्।',
+    historyClearedMessage: 'सबै रेकर्ड मेटाइयो',
+    appSettingsSection: 'एप सेटिङ',
+    dataAccountSection: 'डाटा · खाता',
+    employeeNumberTemplate: 'कर्मचारी नं. {number}',
+    duplicateDialogTitle: 'दोहोरो फोटो',
+    duplicateDialogBodyTemplate:
+        'आज यो वस्तुको फोटो पहिले नै खिचिसकिएको छ।\n\nउपकरणको नाम = {name}',
+    noHistoryMessage: 'अहिलेसम्म कुनै रेकर्ड छैन',
+    noCameraMessage:
+        'प्रयोग गर्न मिल्ने क्यामेरा छैन।\nवास्तविक उपकरणमा (USB जोडेर) चलाउनुहोस्।',
+    cameraInitErrorTemplate:
+        'क्यामेरा सुरु गर्न सकिएन: {error}\nअनुमति दिनुभएको छ कि जाँच गर्नुहोस्।',
+    cameraOverlayHint: 'जान्न चाहेको वस्तु स्क्रिनमा राखेर फोटो खिच्नुहोस्',
+    analyzingText: 'विश्लेषण हुँदैछ...',
+    captureFailedPrefix: 'फोटो खिच्न सकिएन: ',
+    galleryLabel: 'फोटो छान्नुहोस्',
+    switchCameraLabel: 'क्यामेरा बदल्नुहोस्',
+    errorNoApiKey: 'पहिचान असफल (API कुञ्जी छैन)',
+    errorServerBusy: 'सर्भर व्यस्त छ। केही बेरपछि फेरि प्रयास गर्नुहोस्',
+    errorStatusCodeTemplate: 'पहिचान असफल (स्थिति कोड: {code})',
+    errorGeneric: 'पहिचान असफल',
+    errorNetworkOrApi: 'पहिचान असफल (नेटवर्क वा API त्रुटि)',
+    greetingTemplate: 'नमस्ते {name},\nआज पनि सुरक्षित रहनुहोस्',
+    searchPlaceholder: 'नाम वा विवरणले उपकरण·चिन्ह खोज्नुहोस्',
+    noSearchResultMessage: 'कुनै नतिजा भेटिएन',
+    safetyNoticeTitle: 'सुरक्षा सूचना',
+    recentAnalysisTitle: 'हालको विश्लेषण',
+    viewAllButton: 'सबै हेर्नुहोस्',
+    notificationsLabel: 'सूचनाहरू',
+    daysAgoTemplate: '{n} दिन अघि',
+    todayLabel: 'आज',
+    yesterdayLabel: 'हिजो',
+    noticeUrgentLabel: 'जरुरी',
+    noticeCampaignLabel: 'अभियान',
+    noticeKeyPointsTitle: 'मुख्य बुँदाहरू',
+    viewOriginalButton: 'मूल सूचना हेर्नुहोस्',
+    launchFailedMessage: 'खोल्न सकिएन',
+    categoryLogistics: 'ढुवानी',
+    categoryElectrical: 'बिजुली',
+    categoryWoodworking: 'काठको काम',
+    categoryWelding: 'वेल्डिङ',
+    categoryPress: 'प्रेस',
+    signageSubtitle: 'कार्यस्थलमा राखिएका सुरक्षा चिन्हहरू खोज्नुहोस्',
+    signTypeWarning: 'चेतावनी',
+    signTypeMandatory: 'अनिवार्य',
+    signTypeProhibition: 'निषेध',
+    signPlaceLabel: 'राखिने ठाउँ',
+    signHazardLabel: 'खतरा',
+    listenLabel: 'आवाजमा सुन्नुहोस्',
+    ttsUnavailableMessage: 'यो भाषाको आवाज उपलब्ध छैन',
+    managerTitle: 'साइट प्रबन्धक',
+    phoneLabel: 'फोन नम्बर',
+    locationLabel: 'स्थान',
+    workHoursLabel: 'काम गर्ने समय',
+    callButton: 'फोन गर्नुहोस्',
+    messageLabel: 'सन्देश पठाउनुहोस्',
+    historyCountTemplate: 'अहिलेसम्म {count} पटक विश्लेषण',
+    filterAllLabel: 'सबै',
+    levelDangerLabel: 'खतरा',
+    levelCautionLabel: 'सावधान',
+    levelMandatoryLabel: 'अनिवार्य',
+    noFilteredHistoryMessage: 'मिल्ने रेकर्ड छैन',
+    appSlogan: 'काममा पनि सुरक्षित',
+  );
+
+  static const th = AppLanguage._(
+    code: 'th',
+    label: 'ภาษาไทย',
+    englishName: 'Thai',
+    flag: '🇹🇭',
+    promptName: 'ภาษาไทย (Thai)',
+    unknownLabel: 'ไม่ทราบ',
+    managerNotice: 'ก่อนใช้งานอุปกรณ์ ต้องสอบถามผู้จัดการหน้างานทุกครั้ง',
+    retakeButton: 'ถ่ายใหม่',
+    homeLabel: 'หน้าหลัก',
+    viewRecordButton: 'ดูบันทึก',
+    confirmButton: 'ตกลง',
+    cancelButton: 'ยกเลิก',
+    deleteButton: 'ลบ',
+    closeLabel: 'ปิด',
+    shareLabel: 'แชร์',
+    hazardsTitle: 'มีอันตรายเหล่านี้',
+    ppeTitle: 'ต้องสวมใส่สิ่งเหล่านี้',
+    prohibitedTitle: 'ห้ามทำสิ่งนี้',
+    analysisResultTitle: 'ผลการวิเคราะห์',
+    askManagerButton: 'ถามผู้จัดการวิธีใช้งาน',
+    cameraLabel: 'กล้อง',
+    signageLabel: 'ป้าย',
+    historyTabLabel: 'บันทึก',
+    historyLabel: 'บันทึกล่าสุด',
+    menuLabel: 'เมนู',
+    languageSettingsLabel: 'ภาษา',
+    languagePickerTitle: 'เลือกภาษา',
+    languagePickerSubtitle:
+        'ข้อความทั้งหมดในแอปและผลการวิเคราะห์จะเปลี่ยนเป็นภาษาที่เลือกทันที',
+    languageNames: {
+      'ko': 'ภาษาเกาหลี',
+      'en': 'ภาษาอังกฤษ',
+      'vi': 'ภาษาเวียดนาม',
+      'km': 'ภาษาเขมร',
+      'ne': 'ภาษาเนปาล',
+      'th': 'ภาษาไทย',
+    },
+    howToUseLabel: 'วิธีใช้งาน',
+    howToUseSteps: [
+      'กดปุ่มกล้องตรงกลางแล้วถ่ายรูปสิ่งของ',
+      'AI จะบอกว่าสิ่งนั้นคืออะไรและทำงานอย่างไรให้ปลอดภัย',
+      'ดูย้อนหลังได้ที่แท็บบันทึก',
+    ],
+    appInfoLabel: 'ข้อมูลแอป',
+    appDescription: 'แอปข้อมูลความปลอดภัยสำหรับแรงงานต่างชาติในโรงงานอัจฉริยะ',
+    clearHistoryLabel: 'ลบบันทึกทั้งหมด',
+    clearHistoryConfirmMessage:
+        'ลบบันทึกทั้งหมดหรือไม่?\nรูปภาพที่บันทึกไว้จะถูกลบด้วย',
+    historyClearedMessage: 'ลบบันทึกทั้งหมดแล้ว',
+    appSettingsSection: 'ตั้งค่าแอป',
+    dataAccountSection: 'ข้อมูล · บัญชี',
+    employeeNumberTemplate: 'รหัสพนักงาน {number}',
+    duplicateDialogTitle: 'ถ่ายซ้ำ',
+    duplicateDialogBodyTemplate:
+        'วันนี้คุณถ่ายสิ่งนี้ไปแล้ว\n\nชื่ออุปกรณ์ = {name}',
+    noHistoryMessage: 'ยังไม่มีบันทึก',
+    noCameraMessage:
+        'ไม่มีกล้องที่ใช้งานได้\nกรุณาใช้งานบนอุปกรณ์จริง (เชื่อมต่อ USB)',
+    cameraInitErrorTemplate:
+        'เปิดกล้องไม่สำเร็จ: {error}\nกรุณาตรวจสอบว่าอนุญาตสิทธิ์แล้ว',
+    cameraOverlayHint: 'จัดสิ่งที่อยากรู้ให้อยู่ในจอแล้วถ่ายรูป',
+    analyzingText: 'กำลังวิเคราะห์...',
+    captureFailedPrefix: 'ถ่ายรูปไม่สำเร็จ: ',
+    galleryLabel: 'เลือกรูปภาพ',
+    switchCameraLabel: 'สลับกล้อง',
+    errorNoApiKey: 'จดจำไม่สำเร็จ (ไม่มีคีย์ API)',
+    errorServerBusy: 'เซิร์ฟเวอร์ไม่ว่าง กรุณาลองใหม่อีกครั้ง',
+    errorStatusCodeTemplate: 'จดจำไม่สำเร็จ (รหัสสถานะ: {code})',
+    errorGeneric: 'จดจำไม่สำเร็จ',
+    errorNetworkOrApi: 'จดจำไม่สำเร็จ (เครือข่ายหรือ API ผิดพลาด)',
+    greetingTemplate: 'สวัสดี {name}\nวันนี้ก็ทำงานอย่างปลอดภัยนะ',
+    searchPlaceholder: 'ค้นหาอุปกรณ์·ป้ายด้วยชื่อหรือคำอธิบาย',
+    noSearchResultMessage: 'ไม่พบผลการค้นหา',
+    safetyNoticeTitle: 'ประกาศความปลอดภัย',
+    recentAnalysisTitle: 'การวิเคราะห์ล่าสุด',
+    viewAllButton: 'ดูทั้งหมด',
+    notificationsLabel: 'การแจ้งเตือน',
+    daysAgoTemplate: '{n} วันที่แล้ว',
+    todayLabel: 'วันนี้',
+    yesterdayLabel: 'เมื่อวาน',
+    noticeUrgentLabel: 'ด่วน',
+    noticeCampaignLabel: 'แคมเปญ',
+    noticeKeyPointsTitle: 'ประเด็นสำคัญ',
+    viewOriginalButton: 'ดูต้นฉบับ',
+    launchFailedMessage: 'เปิดไม่ได้',
+    categoryLogistics: 'โลจิสติกส์',
+    categoryElectrical: 'ไฟฟ้า',
+    categoryWoodworking: 'งานไม้',
+    categoryWelding: 'งานเชื่อม',
+    categoryPress: 'เครื่องกด',
+    signageSubtitle: 'ค้นหาป้ายความปลอดภัยที่ติดในหน้างาน',
+    signTypeWarning: 'เตือน',
+    signTypeMandatory: 'บังคับ',
+    signTypeProhibition: 'ห้าม',
+    signPlaceLabel: 'ติดที่',
+    signHazardLabel: 'อันตราย',
+    listenLabel: 'ฟังเสียง',
+    ttsUnavailableMessage: 'ไม่มีเสียงสำหรับภาษานี้',
+    managerTitle: 'ผู้จัดการหน้างาน',
+    phoneLabel: 'เบอร์โทรศัพท์',
+    locationLabel: 'สถานที่',
+    workHoursLabel: 'เวลาทำงาน',
+    callButton: 'โทร',
+    messageLabel: 'ส่งข้อความ',
+    historyCountTemplate: 'วิเคราะห์แล้ว {count} ครั้ง',
+    filterAllLabel: 'ทั้งหมด',
+    levelDangerLabel: 'อันตราย',
+    levelCautionLabel: 'ระวัง',
+    levelMandatoryLabel: 'บังคับ',
+    noFilteredHistoryMessage: 'ไม่มีบันทึกที่ตรงกัน',
+    appSlogan: 'ทำงานอย่างปลอดภัย',
+  );
+
+  static const all = [ko, en, vi, km, ne, th];
 
   static AppLanguage fromCode(String? code) {
     return all.firstWhere((l) => l.code == code, orElse: () => ko);

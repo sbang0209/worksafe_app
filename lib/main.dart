@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'app_colors.dart';
+import 'history_service.dart';
 import 'language_service.dart';
 import 'screens/splash_screen.dart';
 
@@ -30,6 +31,11 @@ Future<void> bootstrap() async {
     debugPrint('.env 를 불러오지 못했습니다: $e');
   }
   try {
+    await HistoryService.instance.seedDemoIfNeeded();
+  } catch (e) {
+    debugPrint('목업 기록을 넣지 못했습니다: $e');
+  }
+  try {
     cameras = await availableCameras();
   } catch (e) {
     cameras = [];
@@ -45,11 +51,7 @@ class WorkSafeApp extends StatelessWidget {
     return MaterialApp(
       title: 'WorkSafe',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: AppColors.seed),
-        scaffoldBackgroundColor: AppColors.background,
-        useMaterial3: true,
-      ),
+      theme: buildWorkSafeTheme(),
       home: const SplashScreen(),
     );
   }

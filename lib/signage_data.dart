@@ -2,8 +2,22 @@ import 'package:flutter/material.dart';
 
 import 'language_service.dart';
 
-/// 홈 화면 상단 카테고리 5개.
+/// 표지판 화면 상단 카테고리 5개.
 enum SignageCategory { logistics, electrical, woodworking, welding, press }
+
+/// 표지판 종류.
+enum SignType { warning, mandatory, prohibition }
+
+String signTypeName(SignType type, AppLanguage language) {
+  switch (type) {
+    case SignType.warning:
+      return language.signTypeWarning;
+    case SignType.mandatory:
+      return language.signTypeMandatory;
+    case SignType.prohibition:
+      return language.signTypeProhibition;
+  }
+}
 
 IconData categoryIcon(SignageCategory category) {
   switch (category) {
@@ -40,6 +54,9 @@ String categoryName(SignageCategory category, AppLanguage language) {
 class Signage {
   const Signage({
     required this.category,
+    required this.type,
+    required this.place,
+    required this.hazard,
     required this.assetName,
     required this.icon,
     required this.color,
@@ -52,6 +69,14 @@ class Signage {
   });
 
   final SignageCategory category;
+
+  /// 경고 / 지시 / 금지. 표지판 상세의 태그와 그림 배경색을 정한다.
+  final SignType type;
+
+  /// 이 표지판이 붙는 곳과 관련 위험. 언어별 맵이라 [resolveLocalizedText] 로 꺼낸다.
+  /// (ko/en/vi 만 있고, 다른 언어는 영어로 대체된다.)
+  final Map<String, String> place;
+  final Map<String, String> hazard;
 
   /// assets/signs/ 아래 표지판 그림의 파일명(확장자 제외).
   /// 여러 표지판이 같은 그림을 공유할 수 있다(예: 고전압/감전 → high_voltage).
@@ -73,23 +98,24 @@ class Signage {
 
   String name(AppLanguage language) {
     switch (language.code) {
-      case 'en':
-        return nameEn;
+      case 'ko':
+        return nameKo;
       case 'vi':
         return nameVi;
+      // 번역이 없는 언어(캄보디아어·네팔어·태국어)는 영어로 보여준다.
       default:
-        return nameKo;
+        return nameEn;
     }
   }
 
   String description(AppLanguage language) {
     switch (language.code) {
-      case 'en':
-        return descriptionEn;
+      case 'ko':
+        return descriptionKo;
       case 'vi':
         return descriptionVi;
       default:
-        return descriptionKo;
+        return descriptionEn;
     }
   }
 }
@@ -99,6 +125,17 @@ const List<Signage> signageCatalog = [
   // 물류
   Signage(
     category: SignageCategory.logistics,
+    type: SignType.warning,
+    place: {
+      'ko': '창고·하역장 출입구',
+      'en': 'Warehouse and loading dock entrances',
+      'vi': 'Lối vào kho và bến bốc dỡ',
+    },
+    hazard: {
+      'ko': '충돌·끼임 사고 다발',
+      'en': 'Frequent collisions and caught-in accidents',
+      'vi': 'Thường xảy ra va chạm và kẹp',
+    },
     assetName: 'forklift',
     icon: Icons.forklift,
     color: Colors.orange,
@@ -112,6 +149,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.logistics,
+    type: SignType.warning,
+    place: {
+      'ko': '적재 선반·크레인 작업 구역',
+      'en': 'Storage racks and crane work areas',
+      'vi': 'Kệ chứa hàng và khu vực cần cẩu',
+    },
+    hazard: {
+      'ko': '머리 부상·타박상',
+      'en': 'Head injuries and bruises',
+      'vi': 'Chấn thương đầu, bầm dập',
+    },
     assetName: 'falling_object',
     icon: Icons.warning_amber,
     color: Colors.orange,
@@ -124,6 +172,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.logistics,
+    type: SignType.mandatory,
+    place: {
+      'ko': '물류 창고 전 구역',
+      'en': 'All areas of the warehouse',
+      'vi': 'Toàn bộ khu vực kho',
+    },
+    hazard: {
+      'ko': '발 끼임·찔림',
+      'en': 'Crushed or punctured feet',
+      'vi': 'Kẹp hoặc đâm vào chân',
+    },
     assetName: 'safety_shoes',
     icon: Icons.health_and_safety,
     color: Colors.blue,
@@ -136,6 +195,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.logistics,
+    type: SignType.warning,
+    place: {
+      'ko': '중량물 인양·적재 구역',
+      'en': 'Heavy lifting and loading areas',
+      'vi': 'Khu vực nâng và xếp hàng nặng',
+    },
+    hazard: {
+      'ko': '허리 부상·깔림',
+      'en': 'Back injuries, being crushed',
+      'vi': 'Chấn thương lưng, bị đè',
+    },
     assetName: 'hanging_load',
     icon: Icons.scale,
     color: Colors.orange,
@@ -149,6 +219,17 @@ const List<Signage> signageCatalog = [
   // 전기
   Signage(
     category: SignageCategory.electrical,
+    type: SignType.warning,
+    place: {
+      'ko': '변전실·고압 설비',
+      'en': 'Substations and high-voltage equipment',
+      'vi': 'Trạm biến áp và thiết bị cao áp',
+    },
+    hazard: {
+      'ko': '감전·화상',
+      'en': 'Electric shock and burns',
+      'vi': 'Điện giật và bỏng',
+    },
     assetName: 'high_voltage',
     icon: Icons.bolt,
     color: Colors.red,
@@ -161,6 +242,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.electrical,
+    type: SignType.warning,
+    place: {
+      'ko': '배전반·분전함',
+      'en': 'Switchboards and distribution panels',
+      'vi': 'Tủ điện và bảng phân phối',
+    },
+    hazard: {
+      'ko': '감전 사망 사고',
+      'en': 'Fatal electric shock',
+      'vi': 'Tai nạn điện giật tử vong',
+    },
     assetName: 'high_voltage',
     icon: Icons.flash_on,
     color: Colors.red,
@@ -173,6 +265,13 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.electrical,
+    type: SignType.mandatory,
+    place: {
+      'ko': '전기 작업 구역',
+      'en': 'Electrical work areas',
+      'vi': 'Khu vực làm việc về điện',
+    },
+    hazard: {'ko': '감전', 'en': 'Electric shock', 'vi': 'Điện giật'},
     assetName: 'safety_gloves',
     icon: Icons.health_and_safety,
     color: Colors.blue,
@@ -185,6 +284,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.electrical,
+    type: SignType.mandatory,
+    place: {
+      'ko': '설비 점검·수리 구역',
+      'en': 'Equipment inspection and repair areas',
+      'vi': 'Khu vực kiểm tra, sửa chữa thiết bị',
+    },
+    hazard: {
+      'ko': '갑작스런 기계 작동',
+      'en': 'Machines starting unexpectedly',
+      'vi': 'Máy khởi động bất ngờ',
+    },
     assetName: 'danger_zone',
     icon: Icons.power_off,
     color: Colors.blue,
@@ -198,6 +308,17 @@ const List<Signage> signageCatalog = [
   // 목공
   Signage(
     category: SignageCategory.woodworking,
+    type: SignType.warning,
+    place: {
+      'ko': '목공 기계 투입부',
+      'en': 'Woodworking machine feed points',
+      'vi': 'Cửa nạp của máy chế biến gỗ',
+    },
+    hazard: {
+      'ko': '손가락 절단·끼임',
+      'en': 'Finger amputation and pinching',
+      'vi': 'Đứt, kẹp ngón tay',
+    },
     assetName: 'danger_zone',
     icon: Icons.pan_tool,
     color: Colors.orange,
@@ -210,6 +331,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.woodworking,
+    type: SignType.mandatory,
+    place: {
+      'ko': '절단·연마 작업장',
+      'en': 'Cutting and grinding areas',
+      'vi': 'Khu vực cắt và mài',
+    },
+    hazard: {
+      'ko': '파편에 의한 눈 부상',
+      'en': 'Eye injuries from flying chips',
+      'vi': 'Chấn thương mắt do mảnh vụn',
+    },
     assetName: 'eye_protection',
     icon: Icons.visibility,
     color: Colors.blue,
@@ -222,6 +354,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.woodworking,
+    type: SignType.warning,
+    place: {
+      'ko': '목공 기계실',
+      'en': 'Woodworking machine rooms',
+      'vi': 'Phòng máy chế biến gỗ',
+    },
+    hazard: {
+      'ko': '청력 손상',
+      'en': 'Hearing damage',
+      'vi': 'Tổn thương thính giác',
+    },
     assetName: 'ear_protection',
     icon: Icons.hearing,
     color: Colors.orange,
@@ -234,6 +377,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.woodworking,
+    type: SignType.warning,
+    place: {
+      'ko': '톱·절단기 주변',
+      'en': 'Around saws and cutters',
+      'vi': 'Xung quanh máy cưa, máy cắt',
+    },
+    hazard: {
+      'ko': '베임·절단',
+      'en': 'Cuts and amputation',
+      'vi': 'Đứt tay, cắt cụt',
+    },
     assetName: 'slip',
     icon: Icons.content_cut,
     color: Colors.orange,
@@ -247,6 +401,13 @@ const List<Signage> signageCatalog = [
   // 용접
   Signage(
     category: SignageCategory.welding,
+    type: SignType.prohibition,
+    place: {
+      'ko': '인화물질 보관소',
+      'en': 'Flammable storage areas',
+      'vi': 'Kho chứa chất dễ cháy',
+    },
+    hazard: {'ko': '화재·폭발', 'en': 'Fire and explosion', 'vi': 'Cháy nổ'},
     assetName: 'no_fire',
     icon: Icons.local_fire_department,
     color: Colors.red,
@@ -259,6 +420,13 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.welding,
+    type: SignType.mandatory,
+    place: {'ko': '용접 작업장', 'en': 'Welding areas', 'vi': 'Khu vực hàn'},
+    hazard: {
+      'ko': '눈·얼굴 화상',
+      'en': 'Eye and face burns',
+      'vi': 'Bỏng mắt và mặt',
+    },
     assetName: 'face_shield',
     icon: Icons.health_and_safety,
     color: Colors.blue,
@@ -271,6 +439,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.welding,
+    type: SignType.warning,
+    place: {
+      'ko': '용접·도장 작업장',
+      'en': 'Welding and painting areas',
+      'vi': 'Khu vực hàn và sơn',
+    },
+    hazard: {
+      'ko': '중독·질식',
+      'en': 'Poisoning and suffocation',
+      'vi': 'Ngộ độc, ngạt thở',
+    },
     assetName: 'gas_mask',
     icon: Icons.air,
     color: Colors.orange,
@@ -283,6 +462,13 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.welding,
+    type: SignType.warning,
+    place: {
+      'ko': '고온 설비 주변',
+      'en': 'Around hot equipment',
+      'vi': 'Xung quanh thiết bị nhiệt độ cao',
+    },
+    hazard: {'ko': '피부 화상', 'en': 'Skin burns', 'vi': 'Bỏng da'},
     assetName: 'high_temp',
     icon: Icons.whatshot,
     color: Colors.orange,
@@ -296,6 +482,17 @@ const List<Signage> signageCatalog = [
   // 프레스
   Signage(
     category: SignageCategory.press,
+    type: SignType.warning,
+    place: {
+      'ko': '프레스 금형 주변',
+      'en': 'Around press dies',
+      'vi': 'Xung quanh khuôn máy ép',
+    },
+    hazard: {
+      'ko': '손 압착·절단',
+      'en': 'Crushed or amputated hands',
+      'vi': 'Dập, đứt tay',
+    },
     assetName: 'danger_zone',
     icon: Icons.back_hand,
     color: Colors.orange,
@@ -308,6 +505,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.press,
+    type: SignType.mandatory,
+    place: {
+      'ko': '프레스 작업대',
+      'en': 'Press workstations',
+      'vi': 'Bàn làm việc máy ép',
+    },
+    hazard: {
+      'ko': '방호장치 해제 시 끼임',
+      'en': 'Caught-in when guards are removed',
+      'vi': 'Bị kẹp khi tháo thiết bị bảo vệ',
+    },
     assetName: 'helmet',
     icon: Icons.shield,
     color: Colors.blue,
@@ -320,6 +528,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.press,
+    type: SignType.warning,
+    place: {
+      'ko': '기계 조작반',
+      'en': 'Machine control panels',
+      'vi': 'Bảng điều khiển máy',
+    },
+    hazard: {
+      'ko': '비상시 대응 지연',
+      'en': 'Delayed response in emergencies',
+      'vi': 'Chậm phản ứng khi khẩn cấp',
+    },
     assetName: 'slip',
     icon: Icons.emergency,
     color: Colors.red,
@@ -332,6 +551,17 @@ const List<Signage> signageCatalog = [
   ),
   Signage(
     category: SignageCategory.press,
+    type: SignType.mandatory,
+    place: {
+      'ko': '프레스 조작부',
+      'en': 'Press operating controls',
+      'vi': 'Bộ điều khiển máy ép',
+    },
+    hazard: {
+      'ko': '한 손 조작 시 끼임',
+      'en': 'Caught-in when using one hand',
+      'vi': 'Bị kẹp khi thao tác một tay',
+    },
     assetName: 'hanging_load',
     icon: Icons.front_hand,
     color: Colors.blue,

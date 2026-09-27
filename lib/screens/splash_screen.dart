@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../app_colors.dart';
 import '../language_service.dart';
 import '../main.dart' show bootstrap;
-import 'login_screen.dart';
+import 'main_tab_screen.dart';
 
 /// 앱을 켰을 때 가장 먼저 뜨는 화면.
 ///
 /// 보여지는 동안 [bootstrap] 으로 초기화(.env, 카메라 목록)를
 /// 수행하고, 초기화가 그보다 빨리 끝나도 [_minimumDisplay] 만큼은 화면을 유지한
-/// 뒤 로그인 화면으로 넘어간다. 전환은 pushReplacement 라 뒤로가기로 돌아올 수 없다.
+/// 뒤 홈(탭 화면)으로 넘어간다. 전환은 pushReplacement 라 뒤로가기로 돌아올 수 없다.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -47,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     Navigator.of(
       context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainTabScreen()));
   }
 
   @override
@@ -59,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.background, AppColors.banner],
+            colors: [AppColors.background, AppColors.brandTintBg],
           ),
         ),
         child: SafeArea(
@@ -68,11 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.health_and_safety,
-                  size: 96,
-                  color: AppColors.accentDark,
-                ),
+                Icon(Icons.health_and_safety, size: 96, color: AppColors.brand),
                 const SizedBox(height: 20),
                 Text(
                   'WorkSafe',
@@ -80,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen>
                     fontSize: 44,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.5,
-                    color: AppColors.accentDark,
+                    color: AppColors.brand,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -91,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen>
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.accentDark,
+                    color: AppColors.brand,
                   ),
                 ),
               ],
