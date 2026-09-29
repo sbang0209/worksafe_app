@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import 'language_service.dart';
@@ -5,13 +6,31 @@ import 'language_service.dart';
 /// 표지판 설명 등을 음성으로 읽어주는 서비스.
 ///
 /// 화면 여러 곳에서 재사용할 수 있게 싱글턴으로 두고, 새로 읽기 시작하면
-/// 이전에 재생 중이던 음성은 항상 먼저 멈춘다.
-class TtsService {
+/// 이전에 재생 중이던 음성은 항상 먼저 멈춘다. 앱이 백그라운드로 가거나 화면이
+/// 꺼져도 음성이 계속 나오지 않도록 앱 생명주기도 감시한다([init] 참고).
+class TtsService with WidgetsBindingObserver {
   TtsService._();
 
   static final TtsService instance = TtsService._();
 
   final FlutterTts _tts = FlutterTts();
+
+  bool _observing = false;
+
+  /// 앱 생명주기 감시를 시작한다. [WidgetsFlutterBinding.ensureInitialized] 뒤에
+  /// main() 에서 한 번 호출한다. 여러 번 불러도 한 번만 등록된다.
+  void init() {
+    if (_observing) return;
+    _observing = true;
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// 앱이 화면에 다시 활성화된 상태(resumed)가 아니면(백그라운드, 화면 꺼짐,
+  /// 전화 수신 등) 재생 중인 음성을 멈춘다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) stop();
+  }
 
   static const Map<String, String> _localeByLanguageCode = {
     'ko': 'ko-KR',

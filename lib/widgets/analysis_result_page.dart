@@ -8,6 +8,7 @@ import '../language_service.dart';
 import '../result_localization.dart';
 import '../screens/manager_screen.dart';
 import '../tts_service.dart';
+import '../youtube_service.dart';
 import 'common.dart';
 
 /// 언어에 상관없이 "모름" 값을 판별하기 위한 전체 언어의 '모름' 문구 집합.
@@ -30,6 +31,9 @@ class AnalysisResultPage extends StatefulWidget {
     required this.result,
     required this.onBack,
     this.backTooltip,
+    this.showNavigationButtons = false,
+    this.onGoHome,
+    this.onGoToHistory,
   });
 
   final String imagePath;
@@ -39,11 +43,51 @@ class AnalysisResultPage extends StatefulWidget {
   final VoidCallback onBack;
   final String? backTooltip;
 
+  /// true 면(촬영 직후 결과 화면) 하단 버튼 바를 "음성 듣기/관리자에게 확인"
+  /// 대신 "홈으로/분석 데이터" 두 버튼으로 바꾼다. 기록 상세는 기본값 false로
+  /// 기존 버튼 바를 그대로 쓴다. true 일 때는 [onGoHome]/[onGoToHistory] 를
+  /// 함께 넘겨야 한다 — 실제 이동은 이 화면이 아니라 호출한 쪽(카메라 화면)이
+  /// 안다.
+  final bool showNavigationButtons;
+  final VoidCallback? onGoHome;
+  final VoidCallback? onGoToHistory;
+
   @override
   State<AnalysisResultPage> createState() => _AnalysisResultPageState();
 }
 
 class _AnalysisResultPageState extends State<AnalysisResultPage> {
+  /// 관련 영상 조회. result 가 채워진 뒤 한 번만 만들어서, 빌드마다 API 를
+  /// 다시 부르지 않는다. 조회 전(분석 중)에는 null.
+  Future<List<YoutubeVideo>>? _videosFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVideosOnce();
+  }
+
+  @override
+  void didUpdateWidget(AnalysisResultPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 카메라에서는 분석이 끝나 result 가 null → 값으로 바뀔 때 여기로 온다.
+    _loadVideosOnce();
+  }
+
+  void _loadVideosOnce() {
+    final result = widget.result;
+    if (result == null || _videosFuture != null) return;
+    // 분석 실패 결과(안전 정보가 하나도 없고 이름 자리에 오류 문구만 담긴 Map)로는
+    // 검색하지 않는다 — 오류 문구가 검색어가 되어 엉뚱한 영상이 뜨는 걸 막는다.
+    final language = LanguageService.instance.current;
+    final hasSafetyInfo =
+        resolveLocalizedList(result['hazards'], language).isNotEmpty ||
+        resolveLocalizedList(result['prohibited'], language).isNotEmpty ||
+        resolveLocalizedList(result['required_ppe'], language).isNotEmpty;
+    if (!hasSafetyInfo) return;
+    _videosFuture = YoutubeService.instance.searchRelated(result);
+  }
+
   @override
   void dispose() {
     TtsService.instance.stop();
@@ -189,6 +233,11 @@ class _AnalysisResultPageState extends State<AnalysisResultPage> {
                           ],
                         ),
                       ],
+                      _ManagerNotice(text: language.managerNotice),
+                      _RelatedVideos(
+                        future: _videosFuture,
+                        title: language.relatedVideosTitle,
+                      ),
                     ],
                   ],
                 ),
@@ -196,15 +245,20 @@ class _AnalysisResultPageState extends State<AnalysisResultPage> {
             ),
             // 버튼은 스크롤 영역 밖에 고정해서 내용이 길어도 항상 보이게 한다.
             if (r != null)
-              BottomActionBar(
-                secondaryIcon: Icons.volume_up_outlined,
-                secondaryTooltip: language.listenLabel,
-                onSecondary: () => _speak(r, language),
-                secondaryBackground: AppColors.surface,
-                primaryIcon: Icons.phone_outlined,
-                primaryLabel: language.askManagerButton,
-                onPrimary: _openManager,
-              ),
+              widget.showNavigationButtons
+                  ? _NavigationActionBar(
+                      homeLabel: language.goHomeButton,
+                      onHome: widget.onGoHome!,
+                    )
+                  : BottomActionBar(
+                      secondaryIcon: Icons.volume_up_outlined,
+                      secondaryTooltip: language.listenLabel,
+                      onSecondary: () => _speak(r, language),
+                      secondaryBackground: AppColors.surface,
+                      primaryIcon: Icons.phone_outlined,
+                      primaryLabel: language.askManagerButton,
+                      onPrimary: _openManager,
+                    ),
           ],
         ),
       ),
@@ -218,9 +272,13 @@ class _ResolvedResult {
     : name = resolveLocalizedText(result['name'], language),
       category = resolveLocalizedText(result['category'], language),
       usage = resolveLocalizedText(result['usage'], language),
-      hazards = resolveLocalizedList(result['hazards'], language),
-      prohibited = resolveLocalizedList(result['prohibited'], language),
-      ppe = resolveLocalizedList(result['required_ppe'], language);
+      hazards = _filterKnown(resolveLocalizedList(result['hazards'], language)),
+      prohibited = _filterKnown(
+        resolveLocalizedList(result['prohibited'], language),
+      ),
+      ppe = _filterKnown(
+        resolveLocalizedList(result['required_ppe'], language),
+      );
 
   final String name;
   final String category;
@@ -228,6 +286,17 @@ class _ResolvedResult {
   final List<String> hazards;
   final List<String> prohibited;
   final List<String> ppe;
+
+  /// "알 수 없음"(각 언어의 unknownLabel)이거나 빈 문자열인 항목은 목록에서
+  /// 뺀다 — 위험요소·금지행동·보호구 세 목록 모두 같은 규칙을 적용한다.
+  /// 걸러낸 결과가 빈 목록이면 기존 isNotEmpty 조건 덕분에 그 섹션(카드)이
+  /// 통째로 안 그려진다.
+  static List<String> _filterKnown(List<String> items) {
+    return items
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && !_isUnknown(e))
+        .toList();
+  }
 }
 
 /// 사진 썸네일 + 분류 / 이름 / 용도.
@@ -470,6 +539,183 @@ class _BulletSection extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// 촬영 직후 결과 화면 전용 하단 버튼 바. "음성 듣기/관리자에게 확인" 대신
+/// 가로 전체를 차지하는 "홈으로" 버튼 하나를 보여준다. 높이(56)·radius(18)·
+/// 강조(브랜드 틸) 스타일은 앱 전역 [FilledButton] 테마 그대로다.
+class _NavigationActionBar extends StatelessWidget {
+  const _NavigationActionBar({required this.homeLabel, required this.onHome});
+
+  final String homeLabel;
+  final VoidCallback onHome;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: onHome,
+          child: Text(homeLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ),
+    );
+  }
+}
+
+/// 관리자 확인 안내. AI 응답이 아니라 코드에서 항상 고정으로 붙이는 안전
+/// 안내라, Gemini 결과와 무관하게(위험요소·보호구가 비어 있어도) 항상 보여준다.
+/// 카드가 아니라 아이콘 + 한 줄 텍스트의 가벼운 형태로 둔다.
+class _ManagerNotice extends StatelessWidget {
+  const _ManagerNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 하단 "관련 영상" 섹션. 조회 중이거나 결과가 0개/실패면 아무것도 그리지
+/// 않는다(스피너·빈 영역 없이 조용히) — 시연 중 빈 영역이 뜨지 않게 한다.
+class _RelatedVideos extends StatelessWidget {
+  const _RelatedVideos({required this.future, required this.title});
+
+  final Future<List<YoutubeVideo>>? future;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<YoutubeVideo>>(
+      future: future,
+      builder: (context, snapshot) {
+        final videos = snapshot.data;
+        if (videos == null || videos.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            for (final video in videos) _VideoCard(video: video),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// 영상 한 건: 왼쪽 16:9 썸네일, 오른쪽에 제목(최대 2줄) + 채널명.
+/// 누르면 유튜브에서 해당 영상을 연다.
+class _VideoCard extends StatelessWidget {
+  const _VideoCard({required this.video});
+
+  final YoutubeVideo video;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(18),
+      side: const BorderSide(color: AppColors.border),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: AppColors.surface,
+        shape: shape,
+        child: InkWell(
+          customBorder: shape,
+          onTap: () => launchExternal(context, video.watchUrl),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 128,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(
+                        video.thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stack) =>
+                            const ColoredBox(color: AppColors.thumbBg),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        video.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      if (video.channelTitle.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          video.channelTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -18,16 +18,16 @@ abstract final class AppColors {
   static const Color brandOnDark = Color(0xFFBFEAE4); // 틸 위 보조 텍스트
 
   // ── 배경 / 표면 ────────────────────────────────────────
-  static const Color background = Color(0xFFFFFFFF); // 화면 기본 배경(흰색)
+  static const Color background = Color(0xFFF5F6F6); // 화면 기본 배경(흰색)
   static const Color surface = Color(0xFFFFFFFF); // 카드 표면
-  static const Color surfaceMuted = Color(0xFFF7F7F7); // 옅은 내부 박스
-  static const Color fieldBg = Color(0xFFF1F1F1); // 검색바·비활성 칩
-  static const Color thumbBg = Color(0xFFE7E7E7); // 썸네일 플레이스홀더
+  static const Color surfaceMuted = Color(0xFFF0F1F1); // 옅은 내부 박스
+  static const Color fieldBg = Color(0xFFEBECEC); // 검색바·비활성 칩
+  static const Color thumbBg = Color(0xFFE2E3E3); // 썸네일 플레이스홀더
 
   // ── 보더 ───────────────────────────────────────────────
-  static const Color border = Color(0xFFEBEBEB); // 카드 테두리(기본)
-  static const Color borderStrong = Color(0xFFE6E6E6);
-  static const Color divider = Color(0xFFECECEC); // 리스트 구분선
+  static const Color border = Color(0xFFE3E4E4); // 카드 테두리(기본)
+  static const Color borderStrong = Color(0xFFDDDEDE);
+  static const Color divider = Color(0xFFE5E6E6); // 리스트 구분선
 
   // ── 텍스트 (뉴트럴) ────────────────────────────────────
   static const Color textPrimary = Color(0xFF1C1B19); // 본문/제목

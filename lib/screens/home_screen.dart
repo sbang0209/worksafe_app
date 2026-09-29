@@ -12,9 +12,9 @@ import '../risk_level.dart';
 import '../widgets/common.dart';
 import '../widgets/language_sheet.dart';
 import '../widgets/notice_card.dart';
+import 'chat_screen.dart';
 import 'history_detail_screen.dart';
 import 'notice_list_screen.dart';
-import 'search_screen.dart';
 
 /// 홈 탭. 인사말, 검색, 안전 공지, 최근 분석 미리보기.
 class HomeScreen extends StatefulWidget {
@@ -29,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   /// 최근 분석에 보여줄 최대 개수 (2열 x 2줄).
-  static const _recentCount = 4;
+  static const _recentCount = 6;
 
   List<HistoryEntry>? _recent;
 
@@ -53,10 +53,10 @@ class HomeScreenState extends State<HomeScreen> {
     ).push(MaterialPageRoute(builder: (_) => const NoticeListScreen()));
   }
 
-  void _openSearch() {
+  void _openChat() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (_) => const SearchScreen()));
+    ).push(MaterialPageRoute(builder: (_) => const ChatScreen()));
   }
 
   @override
@@ -69,13 +69,9 @@ class HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         bottom: false,
         child: ListView(
-          // 하단 바가 떠 있어 내용이 그 뒤로 이어지므로, 끝에 바 높이만큼 여백을 둔다.
-          padding: EdgeInsets.fromLTRB(
-            20,
-            12,
-            20,
-            MediaQuery.paddingOf(context).bottom + 24,
-          ),
+          // 홈은 내용이 화면보다 짧아 스크롤이 거의 생기지 않는다.
+          // 바 높이만큼 비우면 마지막 카드 아래가 빈 공간으로 보이므로 작은 값만 둔다.
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -102,7 +98,7 @@ class HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _SearchBox(hint: language.searchPlaceholder, onTap: _openSearch),
+            _SearchBox(hint: language.searchPlaceholder, onTap: _openChat),
             const SizedBox(height: 28),
             SectionHeader(
               title: language.safetyNoticeTitle,
@@ -265,17 +261,21 @@ class _SearchBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.fieldBg,
+    final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(22),
+      side: const BorderSide(color: AppColors.brand, width: 1.5),
+    );
+    return Material(
+      color: AppColors.surface,
+      shape: shape,
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+        customBorder: shape,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
           child: Row(
             children: [
-              const Icon(Icons.search, color: AppColors.textSecondary),
+              const Icon(Icons.chat_bubble_outline, color: AppColors.brand),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -284,7 +284,8 @@ class _SearchBox extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
-                    color: AppColors.textFaint,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),

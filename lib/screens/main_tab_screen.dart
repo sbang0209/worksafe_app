@@ -2,11 +2,21 @@ import 'package:flutter/material.dart';
 
 import '../app_colors.dart';
 import '../language_service.dart';
+import '../tts_service.dart';
 import 'camera_screen.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
 import 'menu_screen.dart';
 import 'signage_screen.dart';
+
+/// 떠 있는 알약 모양 하단 바([_BottomNav])의 실제 높이/바닥 여백.
+/// [_BottomNav] 가 이 값들을 쓴다.
+const double kBottomNavHeight = 74;
+const double kBottomNavMargin = 12;
+
+/// 본문은 하단 바 뒤로 이어지지 않는다(extendBody 를 쓰지 않는다).
+/// 마지막 항목이 바에 딱 붙지 않을 만큼만 띄운다.
+double bottomNavInset(BuildContext context) => 16;
 
 class MainTabScreen extends StatefulWidget {
   const MainTabScreen({super.key});
@@ -28,6 +38,9 @@ class _MainTabScreenState extends State<MainTabScreen> {
   final _historyKey = GlobalKey<HistoryScreenState>();
 
   void _switchTab(int index) {
+    // IndexedStack 은 탭을 바꿔도 이전 탭을 dispose 하지 않아 음성이 계속 나온다.
+    // 같은 탭을 다시 눌러도 멈추는 게 맞아서 인덱스 비교 없이 항상 멈춘다.
+    TtsService.instance.stop();
     setState(() => _currentIndex = index);
     // 홈(최근 분석)·기록 탭으로 돌아올 때마다 최신 기록을 다시 불러온다.
     if (index == _homeTab) _homeKey.currentState?.reload();
@@ -35,12 +48,24 @@ class _MainTabScreenState extends State<MainTabScreen> {
   }
 
   Future<void> _openCamera() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const CameraScreen()));
+    TtsService.instance.stop();
+    // 결과 화면의 "홈으로"/"분석 데이터" 버튼을 누르면 카메라 화면이 이 값을
+    // 들고 pop 된다 — 새 화면을 쌓지 않고, 카메라를 닫은 뒤 그 탭으로 바꾼다.
+    final destination = await Navigator.of(context)
+        .push<PostCaptureDestination?>(
+          MaterialPageRoute(builder: (_) => const CameraScreen()),
+        );
     // 카메라에서 새로 찍은 기록이 바로 보이게 한다.
     _homeKey.currentState?.reload();
     _historyKey.currentState?.reload();
+    switch (destination) {
+      case PostCaptureDestination.home:
+        _switchTab(_homeTab);
+      case PostCaptureDestination.history:
+        _switchTab(_historyTab);
+      case null:
+        break;
+    }
   }
 
   @override
@@ -54,9 +79,6 @@ class _MainTabScreenState extends State<MainTabScreen> {
       builder: (context, _) {
         final language = LanguageService.instance.current;
         return Scaffold(
-          // 하단 바는 떠 있는 알약 모양이라, 알약 바깥으로는 화면 내용이 비쳐 보이게
-          // 본문을 바 뒤까지 늘린다. 각 탭은 스크롤 끝에 바 높이만큼 여백을 둔다.
-          extendBody: true,
           body: IndexedStack(
             index: _currentIndex,
             children: [
@@ -73,7 +95,7 @@ class _MainTabScreenState extends State<MainTabScreen> {
             currentIndex: _currentIndex,
             onTabTap: _switchTab,
             onCameraTap: _openCamera,
-            cameraLabel: language.cameraLabel,
+            cameraLabel: language.analyzeTabLabel,
             items: [
               (Icons.home_outlined, language.homeLabel),
               (Icons.warning_amber_rounded, language.signageLabel),
@@ -122,9 +144,9 @@ class _BottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, kBottomNavMargin),
         child: Container(
-          height: 74,
+          height: kBottomNavHeight,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: AppColors.surface,
