@@ -6,6 +6,7 @@ import 'app_colors.dart';
 import 'history_service.dart';
 import 'language_service.dart';
 import 'screens/splash_screen.dart';
+import 'tts_service.dart';
 
 /// 사용 가능한 카메라 목록. [bootstrap] 이 채우며, 그 전에는 빈 목록이다.
 /// (카메라 화면은 스플래시 이후에만 열 수 있어 항상 채워진 뒤에 읽힌다.)
@@ -13,6 +14,7 @@ List<CameraDescription> cameras = [];
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  TtsService.instance.init();
   // 스플래시의 슬로건부터 저장된 언어로 떠야 하므로, 언어만은 첫 프레임 전에 읽는다.
   // (저장소 한 번 읽는 정도라 시작이 눈에 띄게 느려지지 않는다.)
   await LanguageService.instance.init();

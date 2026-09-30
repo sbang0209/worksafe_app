@@ -7,6 +7,7 @@ import '../risk_level.dart';
 import '../widgets/common.dart';
 import '../widgets/history_card.dart';
 import 'history_detail_screen.dart';
+import 'main_tab_screen.dart' show bottomNavInset;
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -112,7 +113,24 @@ class HistoryScreenState extends State<HistoryScreen> {
         currentDate = date;
         rows.add(_DateLabel(_dateLabel(entry, language)));
       }
-      rows.add(HistoryCard(entry: entry, onTap: () => _openDetail(entry)));
+      rows.add(
+        Dismissible(
+          key: ValueKey(entry.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            decoration: BoxDecoration(
+              color: AppColors.danger,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: const Icon(Icons.delete_outline, color: Colors.white),
+          ),
+          confirmDismiss: (_) => _confirmDeleteEntry(language),
+          onDismissed: (_) => _deleteEntry(entry, language),
+          child: HistoryCard(entry: entry, onTap: () => _openDetail(entry)),
+        ),
+      );
     }
 
     return RefreshIndicator(
@@ -120,12 +138,7 @@ class HistoryScreenState extends State<HistoryScreen> {
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         // 하단 바가 떠 있어 내용이 그 뒤로 이어지므로, 끝에 바 높이만큼 여백을 둔다.
-        padding: EdgeInsets.fromLTRB(
-          20,
-          0,
-          20,
-          MediaQuery.paddingOf(context).bottom + 24,
-        ),
+        padding: EdgeInsets.fromLTRB(20, 0, 20, bottomNavInset(context)),
         children: rows,
       ),
     );
@@ -134,6 +147,45 @@ class HistoryScreenState extends State<HistoryScreen> {
   /// 오늘/어제는 글자로, 그 전은 날짜로 보여준다.
   String _dateLabel(HistoryEntry entry, AppLanguage language) =>
       relativeDayLabel(entry.timestamp, language) ?? entry.formattedDate;
+
+  /// 스와이프로 지우기 전 띄우는 확인 다이얼로그. 메뉴 탭의 "기록 전체
+  /// 삭제" 확인과 같은 모양(취소 + 빨간 삭제 텍스트 버튼)으로 맞췄다.
+  /// 삭제를 누르면 true, 취소/바깥 탭이면 false 또는 null — 어느 쪽이든
+  /// Dismissible 은 true 일 때만 실제로 지운다.
+  Future<bool?> _confirmDeleteEntry(AppLanguage language) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(language.deleteEntryTitle),
+        content: Text(language.deleteEntryMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(language.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              language.deleteButton,
+              style: const TextStyle(color: AppColors.danger),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 기록 하나(사진 파일 포함)를 지우고 목록을 다시 불러온다. 날짜 묶음
+  /// 제목은 [_buildBody] 가 [_entries] 로 매번 새로 만들기 때문에, 그 날짜의
+  /// 마지막 기록이었다면 reload 후 자연히 함께 사라진다.
+  Future<void> _deleteEntry(HistoryEntry entry, AppLanguage language) async {
+    await HistoryService.instance.delete(entry.id);
+    await reload();
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(language.entryDeletedMessage)));
+  }
 }
 
 /// "최근 기록" 큰 제목 + "지금까지 N건 분석" 요약.

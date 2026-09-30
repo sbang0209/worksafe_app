@@ -65,7 +65,7 @@ class HistoryService {
   static const _prefsKey = 'history_entries';
 
   /// 목업 기록을 바꾸면 버전을 올려서, 이미 설치된 앱에도 다시 넣게 한다.
-  static const _demoSeededKey = 'demo_history_seeded_v2';
+  static const _demoSeededKey = 'demo_history_seeded_v4';
   static const _demoIdPrefix = 'demo-';
   static const _maxEntries = 20;
 

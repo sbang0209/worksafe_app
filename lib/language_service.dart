@@ -29,8 +29,11 @@ class AppLanguage {
     required this.prohibitedTitle,
     required this.analysisResultTitle,
     required this.askManagerButton,
+    required this.goHomeButton,
+    required this.goToHistoryButton,
     // 하단 탭
     required this.cameraLabel,
+    required this.analyzeTabLabel,
     required this.signageLabel,
     required this.historyTabLabel,
     required this.historyLabel,
@@ -48,6 +51,9 @@ class AppLanguage {
     required this.clearHistoryLabel,
     required this.clearHistoryConfirmMessage,
     required this.historyClearedMessage,
+    required this.deleteEntryTitle,
+    required this.deleteEntryMessage,
+    required this.entryDeletedMessage,
     required this.appSettingsSection,
     required this.dataAccountSection,
     required this.employeeNumberTemplate,
@@ -63,6 +69,12 @@ class AppLanguage {
     required this.captureFailedPrefix,
     required this.galleryLabel,
     required this.switchCameraLabel,
+    required this.quickCheckButton,
+    required this.explainButton,
+    required this.signageCameraLabel,
+    required this.signageCameraHint,
+    required this.signageShutterLabel,
+    required this.relatedVideosTitle,
     // Gemini 실패/폴백 메시지 (분석 실패 시 "이름" 자리에 노출됨)
     required this.errorNoApiKey,
     required this.errorServerBusy,
@@ -73,6 +85,10 @@ class AppLanguage {
     required this.greetingTemplate,
     required this.searchPlaceholder,
     required this.noSearchResultMessage,
+    required this.chatTitle,
+    required this.chatWelcome,
+    required this.chatInputHint,
+    required this.chatSuggestions,
     required this.safetyNoticeTitle,
     required this.recentAnalysisTitle,
     required this.viewAllButton,
@@ -159,8 +175,15 @@ class AppLanguage {
   /// 분석 결과 화면 하단의 주요 버튼. 누르면 현장 관리자 화면으로 간다.
   final String askManagerButton;
 
-  /// 하단 탭 가운데 카메라 버튼과 카메라 화면 제목.
+  /// 촬영 직후 결과 화면(showNavigationButtons)의 하단 두 버튼.
+  final String goHomeButton;
+  final String goToHistoryButton;
+
+  /// 카메라 화면 제목과 셔터 라벨.
   final String cameraLabel;
+
+  /// 하단 탭 가운데 카메라 버튼의 라벨. 카메라 화면 쪽은 [cameraLabel] 을 쓴다.
+  final String analyzeTabLabel;
 
   /// 하단 탭의 표지판 항목 라벨이자 표지판 화면 제목.
   final String signageLabel;
@@ -194,6 +217,13 @@ class AppLanguage {
   /// 기록을 모두 지운 뒤 띄우는 스낵바 문구.
   final String historyClearedMessage;
 
+  /// 분석 데이터 탭에서 기록 하나를 스와이프로 지우기 전 확인 다이얼로그.
+  final String deleteEntryTitle;
+  final String deleteEntryMessage;
+
+  /// 기록 하나를 지운 뒤 띄우는 스낵바 문구.
+  final String entryDeletedMessage;
+
   /// 메뉴 화면의 묶음 제목.
   final String appSettingsSection;
   final String dataAccountSection;
@@ -221,6 +251,26 @@ class AppLanguage {
   final String galleryLabel;
   final String switchCameraLabel;
 
+  /// 카메라 화면 하단 왼쪽 텍스트 버튼("분석하기"). 사진을 찍어 이름과 한 줄
+  /// 설명만 빠르게 받고 음성으로 읽어준다. 기록에는 저장하지 않는다.
+  final String quickCheckButton;
+
+  /// 카메라 화면 하단 오른쪽 텍스트 버튼("설명보기"). 촬영 → 전체 분석 → 결과
+  /// 화면 → 기록 저장까지 이어지는 기존 흐름.
+  final String explainButton;
+
+  /// 표지판 탭 상단 "표지판 촬영" 버튼의 tooltip.
+  final String signageCameraLabel;
+
+  /// 표지판 촬영 모드일 때 카메라 상단에 보여줄 안내 문구.
+  final String signageCameraHint;
+
+  /// 표지판 촬영 모드에서 "설명보기" 자리를 대신하는 촬영 버튼 라벨.
+  final String signageShutterLabel;
+
+  /// 분석 결과 화면 하단 "관련 영상" 섹션 제목.
+  final String relatedVideosTitle;
+
   final String errorNoApiKey;
   final String errorServerBusy;
 
@@ -231,8 +281,22 @@ class AppLanguage {
 
   /// 홈 인사말. '{name}' 자리에 이름이 들어가고 '\n' 에서 줄을 바꾼다.
   final String greetingTemplate;
+
+  /// 홈 검색창(안전 챗봇 입력창)에 그대로 보이는 문구.
   final String searchPlaceholder;
   final String noSearchResultMessage;
+
+  /// 안전 챗봇 화면 제목.
+  final String chatTitle;
+
+  /// 챗봇 화면에 메시지가 하나도 없을 때 가운데 보여줄 안내 문구.
+  final String chatWelcome;
+
+  /// 챗봇 입력창 placeholder.
+  final String chatInputHint;
+
+  /// 챗봇 첫 화면에 칩으로 보여줄 추천 질문 3개. 누르면 그대로 전송된다.
+  final List<String> chatSuggestions;
 
   /// 홈의 섹션 제목과 공지 목록 화면 제목.
   final String safetyNoticeTitle;
@@ -319,15 +383,18 @@ class AppLanguage {
     deleteButton: '삭제',
     closeLabel: '닫기',
     shareLabel: '공유',
-    hazardsTitle: '이런 위험이 있어요',
-    ppeTitle: '이건 꼭 착용하세요',
-    prohibitedTitle: '이건 하지 마세요',
-    analysisResultTitle: '분석 결과',
+    hazardsTitle: '위험 요소',
+    ppeTitle: '필요 보호구',
+    prohibitedTitle: '금지 행동',
+    analysisResultTitle: '상세 정보',
     askManagerButton: '관리자에게 작동법 확인',
+    goHomeButton: '홈으로',
+    goToHistoryButton: '분석 데이터',
     cameraLabel: '카메라',
+    analyzeTabLabel: '분석',
     signageLabel: '표지판',
-    historyTabLabel: '기록',
-    historyLabel: '최근 기록',
+    historyTabLabel: '분석 데이터',
+    historyLabel: '분석 데이터',
     menuLabel: '메뉴',
     languageSettingsLabel: '언어 설정',
     languagePickerTitle: '언어 선택',
@@ -351,6 +418,9 @@ class AppLanguage {
     clearHistoryLabel: '기록 전체 삭제',
     clearHistoryConfirmMessage: '모든 기록을 삭제하시겠어요?\n저장된 사진도 함께 지워집니다.',
     historyClearedMessage: '모든 기록을 삭제했어요',
+    deleteEntryTitle: '이 기록을 삭제할까요?',
+    deleteEntryMessage: '삭제한 기록은 되돌릴 수 없습니다.',
+    entryDeletedMessage: '기록을 삭제했습니다',
     appSettingsSection: '앱 설정',
     dataAccountSection: '데이터 · 계정',
     employeeNumberTemplate: '사원번호 {number}',
@@ -359,19 +429,33 @@ class AppLanguage {
     noHistoryMessage: '아직 기록이 없어요',
     noCameraMessage: '사용 가능한 카메라가 없습니다.\n실기기(USB 연결)에서 실행하세요.',
     cameraInitErrorTemplate: '카메라 초기화 실패: {error}\n권한을 허용했는지 확인하세요.',
-    cameraOverlayHint: '궁금한 물건을 화면에 담고 촬영하세요',
+    cameraOverlayHint: '장비를 화면 중간에 비춰둔\n상태로 아래 버튼을 눌러주세요',
     analyzingText: '분석 중...',
     captureFailedPrefix: '촬영 실패: ',
     galleryLabel: '사진 불러오기',
     switchCameraLabel: '카메라 전환',
+    quickCheckButton: '실시간 음성 분석하기',
+    explainButton: '상세 설명보기',
+    signageCameraLabel: '표지판 촬영',
+    signageCameraHint: '표지판을 화면 가운데에 비춰주세요',
+    signageShutterLabel: '표지판 촬영',
+    relatedVideosTitle: '관련 영상',
     errorNoApiKey: '인식 실패 (API 키 없음)',
     errorServerBusy: '서버가 혼잡합니다. 잠시 후 다시 시도하세요',
     errorStatusCodeTemplate: '인식 실패 (상태코드: {code})',
     errorGeneric: '인식 실패',
     errorNetworkOrApi: '인식 실패 (네트워크 또는 API 오류)',
     greetingTemplate: '{name} 님,\n오늘도 안전하게',
-    searchPlaceholder: '이름이나 설명으로 장비·표지판 찾기',
+    searchPlaceholder: '안전에 대해 물어보세요',
     noSearchResultMessage: '검색 결과가 없어요',
+    chatTitle: '안전 도우미',
+    chatWelcome: '현장 안전에 대해 무엇이든 물어보세요.\n기계 조작법은 반드시 관리자에게 확인하세요.',
+    chatInputHint: '질문을 입력하세요',
+    chatSuggestions: [
+      '안전화는 언제 신어야 하나요?',
+      '프레스 작업할 때 주의할 점은?',
+      '노란 삼각형 표지판은 무슨 뜻인가요?',
+    ],
     safetyNoticeTitle: '안전 공지',
     recentAnalysisTitle: '최근 분석',
     viewAllButton: '전체 보기',
@@ -429,15 +513,18 @@ class AppLanguage {
     deleteButton: 'Delete',
     closeLabel: 'Close',
     shareLabel: 'Share',
-    hazardsTitle: 'Watch Out for These',
-    ppeTitle: 'Always Wear These',
-    prohibitedTitle: "Don't Do This",
-    analysisResultTitle: 'Analysis Result',
+    hazardsTitle: 'Hazards',
+    ppeTitle: 'Required PPE',
+    prohibitedTitle: 'Prohibited Actions',
+    analysisResultTitle: 'Details',
     askManagerButton: 'Ask a Manager How to Use',
+    goHomeButton: 'Home',
+    goToHistoryButton: 'Analysis data',
     cameraLabel: 'Camera',
+    analyzeTabLabel: 'Analyze',
     signageLabel: 'Signs',
-    historyTabLabel: 'History',
-    historyLabel: 'History',
+    historyTabLabel: 'Analysis data',
+    historyLabel: 'Analysis data',
     menuLabel: 'Menu',
     languageSettingsLabel: 'Language',
     languagePickerTitle: 'Choose Language',
@@ -464,6 +551,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'Delete all records?\nSaved photos will be deleted too.',
     historyClearedMessage: 'All records deleted',
+    deleteEntryTitle: 'Delete this record?',
+    deleteEntryMessage: 'Deleted records cannot be restored.',
+    entryDeletedMessage: 'Record deleted',
     appSettingsSection: 'App Settings',
     dataAccountSection: 'Data · Account',
     employeeNumberTemplate: 'Employee No. {number}',
@@ -475,19 +565,35 @@ class AppLanguage {
         'No camera available.\nPlease run on a physical device (USB connected).',
     cameraInitErrorTemplate:
         'Camera initialization failed: {error}\nPlease check that permission was granted.',
-    cameraOverlayHint: 'Frame the item on screen and take a photo',
+    cameraOverlayHint:
+        'Center the equipment on screen,\nthen press a button below',
     analyzingText: 'Analyzing...',
     captureFailedPrefix: 'Capture failed: ',
     galleryLabel: 'Choose Photo',
     switchCameraLabel: 'Switch Camera',
+    quickCheckButton: 'Live voice check',
+    explainButton: 'Full details',
+    signageCameraLabel: 'Scan a sign',
+    signageCameraHint: 'Center the safety sign on screen',
+    signageShutterLabel: 'Scan sign',
+    relatedVideosTitle: 'Related videos',
     errorNoApiKey: 'Recognition failed (missing API key)',
     errorServerBusy: 'The server is busy. Please try again in a moment.',
     errorStatusCodeTemplate: 'Recognition failed (status code: {code})',
     errorGeneric: 'Recognition failed',
     errorNetworkOrApi: 'Recognition failed (network or API error)',
     greetingTemplate: 'Hi {name},\nstay safe today',
-    searchPlaceholder: 'Search equipment and signs',
+    searchPlaceholder: 'Ask about safety',
     noSearchResultMessage: 'No results found',
+    chatTitle: 'Safety Assistant',
+    chatWelcome:
+        'Ask anything about workplace safety.\nAlways check machine operation with your supervisor.',
+    chatInputHint: 'Type your question',
+    chatSuggestions: [
+      'When should I wear safety shoes?',
+      'What should I watch out for at a press?',
+      'What does a yellow triangle sign mean?',
+    ],
     safetyNoticeTitle: 'Safety Notices',
     recentAnalysisTitle: 'Recent Analysis',
     viewAllButton: 'View All',
@@ -545,15 +651,18 @@ class AppLanguage {
     deleteButton: 'Xóa',
     closeLabel: 'Đóng',
     shareLabel: 'Chia sẻ',
-    hazardsTitle: 'Có những nguy hiểm này',
-    ppeTitle: 'Bắt buộc phải mang',
-    prohibitedTitle: 'Không được làm điều này',
-    analysisResultTitle: 'Kết quả phân tích',
+    hazardsTitle: 'Nguy cơ',
+    ppeTitle: 'Thiết bị bảo hộ',
+    prohibitedTitle: 'Hành vi bị cấm',
+    analysisResultTitle: 'Chi tiết',
     askManagerButton: 'Hỏi quản lý cách vận hành',
+    goHomeButton: 'Trang chủ',
+    goToHistoryButton: 'Dữ liệu phân tích',
     cameraLabel: 'Máy ảnh',
+    analyzeTabLabel: 'Phân tích',
     signageLabel: 'Biển báo',
-    historyTabLabel: 'Lịch sử',
-    historyLabel: 'Lịch sử gần đây',
+    historyTabLabel: 'Dữ liệu phân tích',
+    historyLabel: 'Dữ liệu phân tích',
     menuLabel: 'Menu',
     languageSettingsLabel: 'Ngôn ngữ',
     languagePickerTitle: 'Chọn ngôn ngữ',
@@ -580,6 +689,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'Xóa toàn bộ bản ghi?\nẢnh đã lưu cũng sẽ bị xóa.',
     historyClearedMessage: 'Đã xóa toàn bộ bản ghi',
+    deleteEntryTitle: 'Xóa bản ghi này?',
+    deleteEntryMessage: 'Bản ghi đã xóa không thể khôi phục.',
+    entryDeletedMessage: 'Đã xóa bản ghi',
     appSettingsSection: 'Cài đặt ứng dụng',
     dataAccountSection: 'Dữ liệu · Tài khoản',
     employeeNumberTemplate: 'Mã nhân viên {number}',
@@ -591,19 +703,34 @@ class AppLanguage {
         'Không có camera khả dụng.\nVui lòng chạy trên thiết bị thật (kết nối USB).',
     cameraInitErrorTemplate:
         'Khởi tạo camera thất bại: {error}\nVui lòng kiểm tra quyền truy cập đã được cấp chưa.',
-    cameraOverlayHint: 'Đưa vật cần kiểm tra vào màn hình rồi chụp',
+    cameraOverlayHint: 'Đưa thiết bị vào giữa màn hình\nrồi nhấn nút bên dưới',
     analyzingText: 'Đang phân tích...',
     captureFailedPrefix: 'Chụp ảnh thất bại: ',
     galleryLabel: 'Chọn ảnh',
     switchCameraLabel: 'Đổi camera',
+    quickCheckButton: 'Phân tích bằng giọng nói',
+    explainButton: 'Xem chi tiết',
+    signageCameraLabel: 'Chụp biển báo',
+    signageCameraHint: 'Đưa biển báo vào giữa màn hình',
+    signageShutterLabel: 'Chụp biển báo',
+    relatedVideosTitle: 'Video liên quan',
     errorNoApiKey: 'Nhận diện thất bại (thiếu khóa API)',
     errorServerBusy: 'Máy chủ đang quá tải. Vui lòng thử lại sau.',
     errorStatusCodeTemplate: 'Nhận diện thất bại (mã trạng thái: {code})',
     errorGeneric: 'Nhận diện thất bại',
     errorNetworkOrApi: 'Nhận diện thất bại (lỗi mạng hoặc API)',
     greetingTemplate: 'Chào {name},\nhôm nay cũng an toàn nhé',
-    searchPlaceholder: 'Tìm thiết bị, biển báo theo tên hoặc mô tả',
+    searchPlaceholder: 'Hỏi về an toàn',
     noSearchResultMessage: 'Không có kết quả',
+    chatTitle: 'Trợ lý an toàn',
+    chatWelcome:
+        'Hãy hỏi bất cứ điều gì về an toàn lao động.\nCách vận hành máy phải hỏi quản lý.',
+    chatInputHint: 'Nhập câu hỏi',
+    chatSuggestions: [
+      'Khi nào cần mang giày bảo hộ?',
+      'Cần lưu ý gì khi làm việc với máy ép?',
+      'Biển báo tam giác vàng nghĩa là gì?',
+    ],
     safetyNoticeTitle: 'Thông báo an toàn',
     recentAnalysisTitle: 'Phân tích gần đây',
     viewAllButton: 'Xem tất cả',
@@ -661,15 +788,18 @@ class AppLanguage {
     deleteButton: 'លុប',
     closeLabel: 'បិទ',
     shareLabel: 'ចែករំលែក',
-    hazardsTitle: 'មានគ្រោះថ្នាក់ទាំងនេះ',
-    ppeTitle: 'ត្រូវពាក់ទាំងនេះ',
-    prohibitedTitle: 'កុំធ្វើការទាំងនេះ',
-    analysisResultTitle: 'លទ្ធផលវិភាគ',
+    hazardsTitle: 'គ្រោះថ្នាក់',
+    ppeTitle: 'ឧបករណ៍ការពារចាំបាច់',
+    prohibitedTitle: 'សកម្មភាពហាមឃាត់',
+    analysisResultTitle: 'ព័ត៌មានលម្អិត',
     askManagerButton: 'សួរអ្នកគ្រប់គ្រងពីរបៀបប្រើ',
+    goHomeButton: 'ទំព័រដើម',
+    goToHistoryButton: 'ទិន្នន័យវិភាគ',
     cameraLabel: 'កាមេរ៉ា',
+    analyzeTabLabel: 'វិភាគ',
     signageLabel: 'ស្លាកសញ្ញា',
-    historyTabLabel: 'កំណត់ត្រា',
-    historyLabel: 'កំណត់ត្រាថ្មីៗ',
+    historyTabLabel: 'ទិន្នន័យវិភាគ',
+    historyLabel: 'ទិន្នន័យវិភាគ',
     menuLabel: 'ម៉ឺនុយ',
     languageSettingsLabel: 'ភាសា',
     languagePickerTitle: 'ជ្រើសរើសភាសា',
@@ -696,6 +826,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'លុបកំណត់ត្រាទាំងអស់?\nរូបថតដែលបានរក្សាទុកក៏នឹងត្រូវលុបដែរ។',
     historyClearedMessage: 'បានលុបកំណត់ត្រាទាំងអស់',
+    deleteEntryTitle: 'លុបកំណត់ត្រានេះឬ?',
+    deleteEntryMessage: 'កំណត់ត្រាដែលបានលុបមិនអាចយកមកវិញបានទេ។',
+    entryDeletedMessage: 'បានលុបកំណត់ត្រា',
     appSettingsSection: 'ការកំណត់កម្មវិធី',
     dataAccountSection: 'ទិន្នន័យ · គណនី',
     employeeNumberTemplate: 'លេខបុគ្គលិក {number}',
@@ -707,19 +840,34 @@ class AppLanguage {
         'គ្មានកាមេរ៉ាដែលអាចប្រើបាន។\nសូមដំណើរការលើឧបករណ៍ពិត (ភ្ជាប់ USB)។',
     cameraInitErrorTemplate:
         'ចាប់ផ្តើមកាមេរ៉ាបរាជ័យ: {error}\nសូមពិនិត្យថាបានអនុញ្ញាតសិទ្ធិហើយ។',
-    cameraOverlayHint: 'ដាក់វត្ថុដែលចង់ដឹងក្នុងអេក្រង់ ហើយថត',
+    cameraOverlayHint: 'ដាក់ឧបករណ៍នៅកណ្តាលអេក្រង់\nរួចចុចប៊ូតុងខាងក្រោម',
     analyzingText: 'កំពុងវិភាគ...',
     captureFailedPrefix: 'ថតបរាជ័យ: ',
     galleryLabel: 'ជ្រើសរូបថត',
     switchCameraLabel: 'ប្តូរកាមេរ៉ា',
+    quickCheckButton: 'វិភាគសំឡេងផ្ទាល់',
+    explainButton: 'មើលព័ត៌មានលម្អិត',
+    signageCameraLabel: 'ថតស្លាកសញ្ញា',
+    signageCameraHint: 'ដាក់ស្លាកសញ្ញានៅកណ្តាលអេក្រង់',
+    signageShutterLabel: 'ថតស្លាកសញ្ញា',
+    relatedVideosTitle: 'វីដេអូពាក់ព័ន្ធ',
     errorNoApiKey: 'ស្គាល់បរាជ័យ (គ្មានសោ API)',
     errorServerBusy: 'ម៉ាស៊ីនមេរវល់។ សូមព្យាយាមម្តងទៀតបន្តិចក្រោយ',
     errorStatusCodeTemplate: 'ស្គាល់បរាជ័យ (លេខកូដស្ថានភាព: {code})',
     errorGeneric: 'ស្គាល់បរាជ័យ',
     errorNetworkOrApi: 'ស្គាល់បរាជ័យ (បញ្ហាបណ្តាញ ឬ API)',
     greetingTemplate: 'សួស្តី {name}\nថ្ងៃនេះក៏ត្រូវមានសុវត្ថិភាព',
-    searchPlaceholder: 'ស្វែងរកឧបករណ៍ និងស្លាកសញ្ញា',
+    searchPlaceholder: 'សួរអំពីសុវត្ថិភាព',
     noSearchResultMessage: 'រកមិនឃើញលទ្ធផល',
+    chatTitle: 'ជំនួយការសុវត្ថិភាព',
+    chatWelcome:
+        'សួរអ្វីក៏បានអំពីសុវត្ថិភាពការងារ។\nសូមសួរអ្នកគ្រប់គ្រងអំពីរបៀបប្រើម៉ាស៊ីនជានិច្ច។',
+    chatInputHint: 'វាយសំណួររបស់អ្នក',
+    chatSuggestions: [
+      'តើត្រូវពាក់ស្បែកជើងការពារនៅពេលណា?',
+      'តើត្រូវប្រុងប្រយ័ត្នអ្វីខ្លះពេលធ្វើការជាមួយម៉ាស៊ីនចុច?',
+      'សញ្ញាព្រមានរាងត្រីកោណពណ៌លឿងមានន័យអ្វី?',
+    ],
     safetyNoticeTitle: 'សេចក្តីជូនដំណឹងសុវត្ថិភាព',
     recentAnalysisTitle: 'ការវិភាគថ្មីៗ',
     viewAllButton: 'មើលទាំងអស់',
@@ -776,15 +924,18 @@ class AppLanguage {
     deleteButton: 'मेटाउनुहोस्',
     closeLabel: 'बन्द गर्नुहोस्',
     shareLabel: 'सेयर गर्नुहोस्',
-    hazardsTitle: 'यी खतराहरू छन्',
-    ppeTitle: 'यी अनिवार्य लगाउनुहोस्',
-    prohibitedTitle: 'यो नगर्नुहोस्',
-    analysisResultTitle: 'विश्लेषण नतिजा',
+    hazardsTitle: 'खतराहरू',
+    ppeTitle: 'आवश्यक सुरक्षा उपकरण',
+    prohibitedTitle: 'निषेधित कार्यहरू',
+    analysisResultTitle: 'विवरण',
     askManagerButton: 'प्रबन्धकसँग चलाउने तरिका सोध्नुहोस्',
+    goHomeButton: 'गृह',
+    goToHistoryButton: 'विश्लेषण डेटा',
     cameraLabel: 'क्यामेरा',
+    analyzeTabLabel: 'विश्लेषण',
     signageLabel: 'चिन्हहरू',
-    historyTabLabel: 'रेकर्ड',
-    historyLabel: 'हालका रेकर्ड',
+    historyTabLabel: 'विश्लेषण डेटा',
+    historyLabel: 'विश्लेषण डेटा',
     menuLabel: 'मेनु',
     languageSettingsLabel: 'भाषा',
     languagePickerTitle: 'भाषा छान्नुहोस्',
@@ -811,6 +962,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'सबै रेकर्ड मेटाउने हो?\nसुरक्षित फोटोहरू पनि मेटिन्छन्।',
     historyClearedMessage: 'सबै रेकर्ड मेटाइयो',
+    deleteEntryTitle: 'यो रेकर्ड मेटाउने हो?',
+    deleteEntryMessage: 'मेटाइएको रेकर्ड फिर्ता ल्याउन सकिँदैन।',
+    entryDeletedMessage: 'रेकर्ड मेटाइयो',
     appSettingsSection: 'एप सेटिङ',
     dataAccountSection: 'डाटा · खाता',
     employeeNumberTemplate: 'कर्मचारी नं. {number}',
@@ -822,19 +976,34 @@ class AppLanguage {
         'प्रयोग गर्न मिल्ने क्यामेरा छैन।\nवास्तविक उपकरणमा (USB जोडेर) चलाउनुहोस्।',
     cameraInitErrorTemplate:
         'क्यामेरा सुरु गर्न सकिएन: {error}\nअनुमति दिनुभएको छ कि जाँच गर्नुहोस्।',
-    cameraOverlayHint: 'जान्न चाहेको वस्तु स्क्रिनमा राखेर फोटो खिच्नुहोस्',
+    cameraOverlayHint: 'उपकरणलाई स्क्रिनको बीचमा राखेर\nतलको बटन थिच्नुहोस्',
     analyzingText: 'विश्लेषण हुँदैछ...',
     captureFailedPrefix: 'फोटो खिच्न सकिएन: ',
     galleryLabel: 'फोटो छान्नुहोस्',
     switchCameraLabel: 'क्यामेरा बदल्नुहोस्',
+    quickCheckButton: 'प्रत्यक्ष आवाज विश्लेषण',
+    explainButton: 'पूरा विवरण हेर्नुहोस्',
+    signageCameraLabel: 'चिन्ह स्क्यान गर्नुहोस्',
+    signageCameraHint: 'सुरक्षा चिन्हलाई स्क्रिनको बीचमा राख्नुहोस्',
+    signageShutterLabel: 'चिन्ह स्क्यान गर्नुहोस्',
+    relatedVideosTitle: 'सम्बन्धित भिडियो',
     errorNoApiKey: 'पहिचान असफल (API कुञ्जी छैन)',
     errorServerBusy: 'सर्भर व्यस्त छ। केही बेरपछि फेरि प्रयास गर्नुहोस्',
     errorStatusCodeTemplate: 'पहिचान असफल (स्थिति कोड: {code})',
     errorGeneric: 'पहिचान असफल',
     errorNetworkOrApi: 'पहिचान असफल (नेटवर्क वा API त्रुटि)',
     greetingTemplate: 'नमस्ते {name},\nआज पनि सुरक्षित रहनुहोस्',
-    searchPlaceholder: 'नाम वा विवरणले उपकरण·चिन्ह खोज्नुहोस्',
+    searchPlaceholder: 'सुरक्षाको बारेमा सोध्नुहोस्',
     noSearchResultMessage: 'कुनै नतिजा भेटिएन',
+    chatTitle: 'सुरक्षा सहायक',
+    chatWelcome:
+        'कार्यस्थल सुरक्षाको बारेमा जे पनि सोध्नुहोस्।\nमेसिन चलाउने तरिका सधैं सुपरिवेक्षकसँग जाँच गर्नुहोस्।',
+    chatInputHint: 'आफ्नो प्रश्न लेख्नुहोस्',
+    chatSuggestions: [
+      'सुरक्षा जुत्ता कहिले लगाउनुपर्छ?',
+      'प्रेसमा काम गर्दा के ध्यान दिनुपर्छ?',
+      'पहेंलो त्रिकोण चिन्हको अर्थ के हो?',
+    ],
     safetyNoticeTitle: 'सुरक्षा सूचना',
     recentAnalysisTitle: 'हालको विश्लेषण',
     viewAllButton: 'सबै हेर्नुहोस्',
@@ -891,15 +1060,18 @@ class AppLanguage {
     deleteButton: 'ลบ',
     closeLabel: 'ปิด',
     shareLabel: 'แชร์',
-    hazardsTitle: 'มีอันตรายเหล่านี้',
-    ppeTitle: 'ต้องสวมใส่สิ่งเหล่านี้',
-    prohibitedTitle: 'ห้ามทำสิ่งนี้',
-    analysisResultTitle: 'ผลการวิเคราะห์',
+    hazardsTitle: 'อันตราย',
+    ppeTitle: 'อุปกรณ์ป้องกันที่จำเป็น',
+    prohibitedTitle: 'ข้อห้าม',
+    analysisResultTitle: 'รายละเอียด',
     askManagerButton: 'ถามผู้จัดการวิธีใช้งาน',
+    goHomeButton: 'หน้าหลัก',
+    goToHistoryButton: 'ข้อมูลวิเคราะห์',
     cameraLabel: 'กล้อง',
+    analyzeTabLabel: 'วิเคราะห์',
     signageLabel: 'ป้าย',
-    historyTabLabel: 'บันทึก',
-    historyLabel: 'บันทึกล่าสุด',
+    historyTabLabel: 'ข้อมูลวิเคราะห์',
+    historyLabel: 'ข้อมูลวิเคราะห์',
     menuLabel: 'เมนู',
     languageSettingsLabel: 'ภาษา',
     languagePickerTitle: 'เลือกภาษา',
@@ -925,6 +1097,9 @@ class AppLanguage {
     clearHistoryConfirmMessage:
         'ลบบันทึกทั้งหมดหรือไม่?\nรูปภาพที่บันทึกไว้จะถูกลบด้วย',
     historyClearedMessage: 'ลบบันทึกทั้งหมดแล้ว',
+    deleteEntryTitle: 'ลบบันทึกนี้ใช่ไหม?',
+    deleteEntryMessage: 'บันทึกที่ลบแล้วจะกู้คืนไม่ได้',
+    entryDeletedMessage: 'ลบบันทึกแล้ว',
     appSettingsSection: 'ตั้งค่าแอป',
     dataAccountSection: 'ข้อมูล · บัญชี',
     employeeNumberTemplate: 'รหัสพนักงาน {number}',
@@ -936,19 +1111,34 @@ class AppLanguage {
         'ไม่มีกล้องที่ใช้งานได้\nกรุณาใช้งานบนอุปกรณ์จริง (เชื่อมต่อ USB)',
     cameraInitErrorTemplate:
         'เปิดกล้องไม่สำเร็จ: {error}\nกรุณาตรวจสอบว่าอนุญาตสิทธิ์แล้ว',
-    cameraOverlayHint: 'จัดสิ่งที่อยากรู้ให้อยู่ในจอแล้วถ่ายรูป',
+    cameraOverlayHint: 'วางอุปกรณ์ไว้กลางจอ\nแล้วกดปุ่มด้านล่าง',
     analyzingText: 'กำลังวิเคราะห์...',
     captureFailedPrefix: 'ถ่ายรูปไม่สำเร็จ: ',
     galleryLabel: 'เลือกรูปภาพ',
     switchCameraLabel: 'สลับกล้อง',
+    quickCheckButton: 'วิเคราะห์เสียงสด',
+    explainButton: 'ดูรายละเอียดทั้งหมด',
+    signageCameraLabel: 'สแกนป้าย',
+    signageCameraHint: 'วางป้ายเตือนไว้กลางจอ',
+    signageShutterLabel: 'สแกนป้าย',
+    relatedVideosTitle: 'วิดีโอที่เกี่ยวข้อง',
     errorNoApiKey: 'จดจำไม่สำเร็จ (ไม่มีคีย์ API)',
     errorServerBusy: 'เซิร์ฟเวอร์ไม่ว่าง กรุณาลองใหม่อีกครั้ง',
     errorStatusCodeTemplate: 'จดจำไม่สำเร็จ (รหัสสถานะ: {code})',
     errorGeneric: 'จดจำไม่สำเร็จ',
     errorNetworkOrApi: 'จดจำไม่สำเร็จ (เครือข่ายหรือ API ผิดพลาด)',
     greetingTemplate: 'สวัสดี {name}\nวันนี้ก็ทำงานอย่างปลอดภัยนะ',
-    searchPlaceholder: 'ค้นหาอุปกรณ์·ป้ายด้วยชื่อหรือคำอธิบาย',
+    searchPlaceholder: 'ถามเกี่ยวกับความปลอดภัย',
     noSearchResultMessage: 'ไม่พบผลการค้นหา',
+    chatTitle: 'ผู้ช่วยด้านความปลอดภัย',
+    chatWelcome:
+        'ถามอะไรก็ได้เกี่ยวกับความปลอดภัยในที่ทำงาน\nวิธีใช้งานเครื่องจักรต้องตรวจสอบกับหัวหน้างานเสมอ',
+    chatInputHint: 'พิมพ์คำถามของคุณ',
+    chatSuggestions: [
+      'ควรใส่รองเท้านิรภัยเมื่อไหร่?',
+      'ต้องระวังอะไรบ้างเมื่อทำงานกับเครื่องอัด?',
+      'ป้ายสามเหลี่ยมสีเหลืองหมายความว่าอย่างไร?',
+    ],
     safetyNoticeTitle: 'ประกาศความปลอดภัย',
     recentAnalysisTitle: 'การวิเคราะห์ล่าสุด',
     viewAllButton: 'ดูทั้งหมด',

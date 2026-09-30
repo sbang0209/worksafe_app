@@ -6,6 +6,8 @@ import '../signage_data.dart';
 import '../widgets/common.dart';
 import '../widgets/signage_image.dart';
 import '../widgets/signage_sheet.dart';
+import 'camera_screen.dart';
+import 'main_tab_screen.dart' show bottomNavInset;
 
 /// 표지판 탭. 카테고리 칩으로 골라 현장 안전 표지판을 본다.
 /// 카드를 누르면 상세 바텀시트가 뜬다.
@@ -17,12 +19,28 @@ class SignageScreen extends StatefulWidget {
 }
 
 class _SignageScreenState extends State<SignageScreen> {
-  SignageCategory _selectedCategory = SignageCategory.values.first;
+  /// null 이면 "전체"(모든 카테고리). 처음에는 전체가 선택된 상태다.
+  SignageCategory? _selectedCategory;
+
+  /// 표지판 촬영 화면을 열고, 등록된 표지판을 찾아 돌아오면(그 값이 null 이
+  /// 아니면) 상세 시트를 띄운다. 시트는 촬영 화면이 아니라 여기서 띄워서,
+  /// 촬영 화면을 닫고 표지판 탭으로 돌아온 뒤에 화면 가운데에 뜬다.
+  Future<void> _openSignageCamera() async {
+    final signage = await Navigator.of(context).push<Signage?>(
+      MaterialPageRoute(builder: (_) => const CameraScreen(signageMode: true)),
+    );
+    if (signage != null && mounted) {
+      await showSignageSheet(context, signage);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final language = LanguageService.instance.current;
-    final items = signageForCategory(_selectedCategory);
+    final selected = _selectedCategory;
+    final items = selected == null
+        ? signageCatalog
+        : signageForCategory(selected);
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -34,7 +52,18 @@ class _SignageScreenState extends State<SignageScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LargeTitle(language.signageLabel),
+                    Row(
+                      children: [
+                        Expanded(child: LargeTitle(language.signageLabel)),
+                        RoundIconButton(
+                          icon: Icons.photo_camera_outlined,
+                          tooltip: language.signageCameraLabel,
+                          background: AppColors.brandTintBg,
+                          foreground: AppColors.brand,
+                          onTap: _openSignageCamera,
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       language.signageSubtitle,
@@ -53,11 +82,13 @@ class _SignageScreenState extends State<SignageScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                 child: Row(
                   children: [
-                    for (final category in SignageCategory.values)
+                    for (final category in [null, ...SignageCategory.values])
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterPill(
-                          label: categoryName(category, language),
+                          label: category == null
+                              ? language.filterAllLabel
+                              : categoryName(category, language),
                           selected: category == _selectedCategory,
                           onTap: () =>
                               setState(() => _selectedCategory = category),
@@ -69,12 +100,7 @@ class _SignageScreenState extends State<SignageScreen> {
             ),
             SliverPadding(
               // 하단 바가 떠 있어 내용이 그 뒤로 이어지므로, 끝에 바 높이만큼 여백을 둔다.
-              padding: EdgeInsets.fromLTRB(
-                20,
-                0,
-                20,
-                MediaQuery.paddingOf(context).bottom + 24,
-              ),
+              padding: EdgeInsets.fromLTRB(20, 0, 20, bottomNavInset(context)),
               sliver: SliverGrid.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,

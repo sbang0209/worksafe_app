@@ -7,6 +7,7 @@ import '../history_service.dart';
 import '../language_service.dart';
 import '../widgets/common.dart';
 import '../widgets/language_sheet.dart';
+import 'main_tab_screen.dart' show bottomNavInset;
 
 /// 메뉴 탭. 프로필 카드 아래에 앱 설정 / 데이터·계정 항목을 묶어서 둔다.
 class MenuScreen extends StatelessWidget {
@@ -166,12 +167,7 @@ class MenuScreen extends StatelessWidget {
         bottom: false,
         child: ListView(
           // 하단 바가 떠 있어 내용이 그 뒤로 이어지므로, 끝에 바 높이만큼 여백을 둔다.
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.paddingOf(context).bottom + 24,
-          ),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomNavInset(context)),
           children: [
             LargeTitle(language.menuLabel),
             const SizedBox(height: 20),
